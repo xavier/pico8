@@ -19,8 +19,8 @@ function particle_new(x, y, energy, angle, speed)
   pos_y   = y,
   vel_x   = speed * cos(angle),
   vel_y   = -speed * sin(angle),
-  nrg_ini = energy,
   nrg     = energy,
+  dcy     = 1/energy,
   color   = 7
  }
 end
@@ -36,7 +36,7 @@ function particles_update(frame)
     particle.vel_y = -particle.vel_y/2
    end
     particle.pos_y += particle.vel_y
-   particle.color = calc_color(particle.nrg / particle.nrg_ini)
+   particle.color = calc_color(particle.nrg * particle.dcy)
   else
    particles[i] = particle_new(64, 32, rnd(100), rnd(100)/100, 1+rnd(1))
   end
