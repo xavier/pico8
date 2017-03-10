@@ -296,7 +296,7 @@ function update_ties()
      laser.col = 0
      xwing.score += 1
      local pos = projectv(tie.pos)
-     particle_explosion(pos.x, pos.y, 10)
+     particle_explosion(pos.x, pos.y, 10+rnd(10))
      break
     end
    end
