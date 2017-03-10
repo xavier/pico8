@@ -337,7 +337,7 @@ function update_ties()
  for idx, tie in pairs(ties) do
   if tie.destroyed then
    tie.respawn -= 1
-   if tie.respawn == 0 then
+   if tie.respawn <= 0 then
     ties[idx] = random_tie(50)
    end
   else
