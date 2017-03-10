@@ -493,7 +493,7 @@ end
 
 function update_xwing()
  -- autorepair
- xwing.lasers_level  = min(1, xwing.lasers_level+0.001)
+ xwing.lasers_level  = min(1, xwing.lasers_level+0.005)
  xwing.shields_level = min(1, xwing.shields_level+0.001)
 end
 
