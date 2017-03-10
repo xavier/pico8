@@ -422,30 +422,30 @@ end
 -- xwing
 
 function update_xwing()
+ -- autorepair
  xwing.lasers_level  = min(1, xwing.lasers_level+0.001)
  xwing.shields_level = min(1, xwing.shields_level+0.001)
 end
 
 function take_hit(amount)
- xwing.shields_level  = max(0, xwing.shields_level - amount)
- sfx(4+rnd(3))
+ xwing.shields_level = max(0, xwing.shields_level - amount)
+ --sfx(4+rnd(3))
 end
 
 function bank(angle)
- if abs(xwing.roll) < 0.05 then
-  xwing.roll += angle
- end
+ xwing.roll = mid(-0.05, xwing.roll + angle, 0.05)
 end
 
 function unbank(angle)
- if xwing.roll > 0 then
+ if xwing.roll > angle then
   xwing.roll -= angle
- elseif xwing.roll < 0 then
+ elseif xwing.roll < -angle then
   xwing.roll += angle
  else
   xwing.roll = 0
  end
 end
+
 
 function handle_input()
  if btn(0) then -- left
@@ -456,7 +456,11 @@ function handle_input()
   scene_cam[1] += 0.5
   xwing.shake_x = 2
   bank(-0.01)
- elseif btn(2) then -- up
+ else
+  unbank(0.02)
+ end
+
+ if btn(2) then -- up
   scene_cam[2] += 0.5
   xwing.shake_y = 2
  elseif btn(3) then -- down
@@ -465,7 +469,6 @@ function handle_input()
  else
   xwing.shake_x = 0
   xwing.shake_y = 0
-  unbank(0.01)
  end
 
  if btnp(4) then
@@ -481,6 +484,18 @@ function handle_input()
  end
 end
 
+-- debug
+
+function draw_debug()
+
+ -- horizon
+ local x1, y1 = cos(xwing.roll), sin(xwing.roll)
+ local x2, y2 = cos(xwing.roll+0.5), sin(xwing.roll+0.5)
+ line(64+5*x1, 20+5*y1, 64+5*x2, 20+5*y2, 14)
+
+ print(xwing.roll, 80, 20)
+
+end
 
 -- main
 
@@ -505,9 +520,10 @@ function _draw()
  draw_starfield()
  draw_lasers()
  draw_ties()
+ draw_particles()
  draw_hud()
  draw_xwing()
- draw_particles()
+ draw_debug()
 end
 
 
