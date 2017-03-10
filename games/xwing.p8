@@ -19,6 +19,15 @@ function addv(v1, v2)
  return {v1[1]+v2[1], v1[2]+v2[2], v1[3]+v2[3]}
 end
 
+function subv(v1, v2)
+ return {v1[1]-v2[1], v1[2]-v2[2], v1[3]-v2[3]}
+end
+
+function normv(v)
+ local s = 1/sqrt(sqr(v[1])+sqr(v[2])+sqr(v[3]))
+ return {v[1]*s, v[2]*s, v[3]*s}
+end
+
 function projectv(v)
  return project(v[1], v[2], v[3])
 end
@@ -172,10 +181,13 @@ function fire_laser()
 
  local laser = {
   pos=rotate_z(scene_cam[1]-x*4, scene_cam[2]-y-2, 0, xwing.roll),
-  vel={0,0,1},
   col=9,
   blast_radius=1
  }
+
+ local cannon_aim = {scene_cam[1], scene_cam[2], 20}
+
+ laser.vel = normv(subv(cannon_aim, laser.pos))
 
  add(lasers, laser)
 
