@@ -503,8 +503,10 @@ function draw_debug()
   print(tie.pos[3], p.x, p.y, col)
  end
  for laser in all(lasers) do
-  local p = projectv(laser.pos)
-  print(laser.pos[3], p.x, p.y, col)
+  if laser.col != 0 then
+   local p = projectv(laser.pos)
+   print(laser.pos[3], p.x, p.y, col)
+  end
  end
 
 end
