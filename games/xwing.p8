@@ -533,9 +533,10 @@ function draw_debug()
 
  -- resources
 
- print("l"..#lasers, 0, 10, col)
- print("t"..#ties, 0, 16, col)
- print("p"..#particles_pool, 0, 22, col)
+ print("f"..frame, 0, 10, col)
+ print("l"..#lasers, 0, 16, col)
+ print("t"..#ties, 0, 22, col)
+ print("p"..#particles_pool, 0, 28, col)
 
 end
 
