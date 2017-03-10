@@ -290,12 +290,13 @@ function update_ties()
  for laser in all(lasers) do
   if laser.col != 0 then
    for tie in all(ties) do
-    if distv(laser.pos, tie.pos) < 1 then
+    if not tie.destroyed and distv(laser.pos, tie.pos) < 1 then
      tie.destroyed = true
      laser.col = 0
      xwing.score += 1
      local pos = projectv(tie.pos)
      particle_explosion(pos.x, pos.y, 10)
+     break
     end
    end
   end
