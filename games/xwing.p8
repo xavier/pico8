@@ -292,6 +292,7 @@ function update_ties()
    for tie in all(ties) do
     if not tie.destroyed and distv(laser.pos, tie.pos) < 1 then
      tie.destroyed = true
+     tie.respawn = 30*(2+rnd(3))
      laser.col = 0
      xwing.score += 1
      local pos = projectv(tie.pos)
@@ -304,6 +305,10 @@ function update_ties()
 
  for idx, tie in pairs(ties) do
   if tie.destroyed then
+   tie.respawn -= 1
+   if tie.respawn == 0 then
+    ties[idx] = random_tie(50)
+   end
   else
    tie.pos[3] -= 0.5
    tie.roll += tie.angvel
