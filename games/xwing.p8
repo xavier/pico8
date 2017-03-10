@@ -344,9 +344,13 @@ function update_ties()
    tie.pos[3] -= 0.5
    tie.roll += tie.angvel
    if tie.pos[3] < 0 then
-    --sfx(2)
+    -- colision with tie
+    if abs(tie.pos[1]-scene_cam[1]) < 2 and abs(tie.pos[2]-scene_cam[2]) < 2 then
+     sfx(2)
+     take_hit(0.2)
+    end
+    -- spawn new tie
     ties[idx] = random_tie(50)
-    take_hit(0.1)
    end
   end
  end
@@ -483,7 +487,6 @@ end
 
 function take_hit(amount)
  xwing.shields_level = max(0, xwing.shields_level - amount)
- --sfx(4+rnd(3))
 end
 
 function bank(angle)
