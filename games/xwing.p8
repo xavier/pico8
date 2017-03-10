@@ -59,6 +59,20 @@ function particle_explosion(x, y, n)
  end
 end
 
+function particle_shockwave(x, y, energy, speed)
+ particles_add({
+  pos_x  = x,
+  pos_y  = y,
+  vel    = speed,
+  radius = 0,
+  nrg    = energy,
+  dcy    = 1/energy,
+  col    = 12,
+  shock  = true
+ })
+end
+
+
 function particle_new(x, y, energy, angle, speed, col)
  return {
   pos_x = x,
@@ -90,9 +104,13 @@ function update_particles(frame)
   particle = particles_pool[i]
   particle.nrg -= 1
   if particle.nrg > 0 then
-   particle.pos_x += particle.vel_x
-   particle.pos_y += particle.vel_y
-   particle.col = particle_color(particle.nrg * particle.dcy, particle.col)
+   if particle.shock then
+    particle.radius += particle.vel
+   else
+    particle.pos_x += particle.vel_x
+    particle.pos_y += particle.vel_y
+    particle.col = particle_color(particle.nrg * particle.dcy, particle.col)
+   end
   end
  end
 end
@@ -114,7 +132,11 @@ end
 function draw_particles()
  for particle in all(particles_pool) do
   if particle.nrg > 0 then
-   pset(particle.pos_x, particle.pos_y, particle.col)
+   if particle.shock then
+    circ(particle.pos_x, particle.pos_y, particle.radius, particle.col)
+   else
+    pset(particle.pos_x, particle.pos_y, particle.col)
+   end
   end
  end
 end
@@ -150,36 +172,39 @@ function fire_laser()
 
  local laser = {
   pos=rotate_z(scene_cam[1]-x*4, scene_cam[2]-y-2, 0, xwing.roll),
-  col=9
+  vel={0,0,1},
+  col=9,
+  blast_radius=1
  }
 
  add(lasers, laser)
 
  xwing.cannon = (xwing.cannon + 1) % 4
- xwing.lasers_level = max(0, xwing.lasers_level - 0.1)
+ xwing.lasers_level = max(0, xwing.lasers_level - 0.05)
 end
 
 function fire_torpedo()
-
- local left_torpedo = {
-  pos=rotate_z(scene_cam[1]-0.5, scene_cam[2]-2, 0, xwing.roll),
-  col=13,
-  torpedo=true
- }
- local right_torpedo = {
-  pos=rotate_z(scene_cam[1]+0.5, scene_cam[2]-2, 0, xwing.roll),
-  col=13,
-  torpedo=true
- }
+ local left_torpedo  = new_torpedo(rotate_z(scene_cam[1]-0.5, scene_cam[2]-2, 0, xwing.roll))
+ local right_torpedo = new_torpedo(rotate_z(scene_cam[1]+0.5, scene_cam[2]-2, 0, xwing.roll))
 
  add(lasers, left_torpedo)
  add(lasers, right_torpedo)
 end
 
+function new_torpedo(pos)
+ return {
+  pos=pos,
+  vel={0,0,0.25},
+  col=13,
+  torpedo=true,
+  blast_radius=2
+ }
+end
+
 
 function update_lasers()
  for laser in all(lasers) do
-  laser.pos[3] += 0.5
+  laser.pos = addv(laser.pos, laser.vel)
   if laser.pos[3] > 20 then
    laser.col = 0
   elseif laser.pos[3] > 10 then
@@ -290,13 +315,19 @@ function update_ties()
  for laser in all(lasers) do
   if laser.col != 0 then
    for tie in all(ties) do
-    if not tie.destroyed and distv(laser.pos, tie.pos) < 1 then
+    if not tie.destroyed and distv(laser.pos, tie.pos) < laser.blast_radius then
+     sfx(4+rnd(3))
      tie.destroyed = true
      tie.respawn = 30*(2+rnd(3))
      laser.col = 0
      xwing.score += 1
      local pos = projectv(tie.pos)
-     particle_explosion(pos.x, pos.y, 10+rnd(10))
+     if laser.torpedo then
+      particle_shockwave(pos.x, pos.y, 32, 2)
+      particle_explosion(pos.x, pos.y, 10)
+     else
+      particle_explosion(pos.x, pos.y, 10+rnd(10))
+     end
      break
     end
    end
