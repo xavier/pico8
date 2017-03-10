@@ -206,7 +206,7 @@ ties = {}
 
 function init_ties()
  for i=1,2 do
-  add(ties, random_tie(10+i*10))
+  add(ties, random_tie(20+i*20))
  end
 end
 
