@@ -487,13 +487,24 @@ end
 -- debug
 
 function draw_debug()
+ local col = 12
 
  -- horizon
  local x1, y1 = cos(xwing.roll), sin(xwing.roll)
  local x2, y2 = cos(xwing.roll+0.5), sin(xwing.roll+0.5)
- line(64+5*x1, 20+5*y1, 64+5*x2, 20+5*y2, 14)
+ line(64+5*x1, 20+5*y1, 64+5*x2, 20+5*y2, col)
 
- print(xwing.roll, 80, 20)
+ print(xwing.roll, 80, 20, col)
+
+ -- depth
+ for tie in all(ties) do
+  local p = projectv(tie.pos)
+  print(tie.pos[3], p.x, p.y, col)
+ end
+ for laser in all(lasers) do
+  local p = projectv(laser.pos)
+  print(laser.pos[3], p.x, p.y, col)
+ end
 
 end
 
