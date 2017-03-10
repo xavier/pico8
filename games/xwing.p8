@@ -375,6 +375,7 @@ end
 function draw_hud()
  draw_crosshair()
  draw_meters()
+ draw_warnings()
 end
 
 function draw_crosshair()
@@ -411,6 +412,22 @@ function draw_meter(x, level, col, peakcol)
   pset(x2, 2, peakcol)
   pset(x2, 3, peakcol)
   pset(x2, 4, peakcol)
+ end
+end
+
+function draw_warnings()
+ if xwing.shields_level < 0.2 then
+  blink("> shields low <", 30, 8)
+ end
+ if xwing.lasers_level < 0.2 then
+  blink("> weapons low <", 100, 9)
+ end
+end
+
+function blink(msg, y, col)
+ local visible = band(frame, 8) > 0
+ if visible then
+  print(msg, 64 - (#msg * 2), y, col)
  end
 end
 
