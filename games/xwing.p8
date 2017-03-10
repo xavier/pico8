@@ -180,14 +180,14 @@ end
 function update_laser()
  for laser in all(lasers) do
   laser.pos[3] += 0.5
-  if laser.pos[3] > 7 then
+  if laser.pos[3] > 20 then
+   laser.col = 0
+  elseif laser.pos[3] > 10 then
    if laser.torpedo then
     laser.col = 1
    else
     laser.col = 4
    end
-  elseif laser.pos[3] > 9 then
-   laser.col = 0
   end
  end
 end
