@@ -122,7 +122,7 @@ end
 -- entities
 
 xwing = {
- blaster = 0,
+ cannon = 0,
  shake_x = 0,
  shake_y = 0,
  roll = 0,
@@ -136,13 +136,13 @@ lasers = {}
 function fire_laser()
  local x, y
 
- if xwing.blaster == 0 or xwing.blaster == 3 then
+ if xwing.cannon == 0 or xwing.cannon == 3 then
   x = -1
  else
   x = 1
  end
 
- if xwing.blaster < 2 then
+ if xwing.cannon < 2 then
   y = 1
  else
   y = -1
@@ -155,7 +155,7 @@ function fire_laser()
 
  add(lasers, laser)
 
- xwing.blaster = (xwing.blaster + 1) % 4
+ xwing.cannon = (xwing.cannon + 1) % 4
  xwing.lasers_level = max(0, xwing.lasers_level - 0.1)
 end
 
@@ -412,7 +412,7 @@ function draw_xwing()
  -- nose
  spr(4, xwing.shake_x+56, xwing.shake_y+120, 1, 1, false)
  spr(4, xwing.shake_x+64, xwing.shake_y+120, 1, 1, true)
- -- blasters
+ -- cannons
  spr(3, xwing.shake_x+0, xwing.shake_y+80, 1, 1, false)
  spr(3, xwing.shake_x+0, xwing.shake_y+120, 1, 1, false)
  spr(3, xwing.shake_x+120, xwing.shake_y+80, 1, 1, true)
