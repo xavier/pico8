@@ -122,7 +122,7 @@ ties = {}
 
 function init_ties()
  for i=1,2 do
-  add(ties, random_tie(i*10))
+  add(ties, random_tie(10+i*10))
  end
 end
 
@@ -130,20 +130,18 @@ function random_tie(depth)
  local r = rnd(10)
  if r <= 7 then
   -- straight
-  return {5-rnd(10), 5-rnd(10), depth, 0, 0}
+  return {pos={5-rnd(10), 5-rnd(10), depth}, roll=0, angvel=0}
  else
   -- spinner
-  return {5-rnd(10), 5-rnd(10), depth, rnd(100)/100, rnd_sign(rnd(10)/1000)}
+  return {pos={5-rnd(10), 5-rnd(10), depth}, roll=rnd(100)/100, angvel=rnd_sign(rnd(10)/1000)}
  end
 end
 
 
-function draw_tie(x, y, z, roll)
+function draw_tie(pos, roll)
  local radius = 1
  local axle   = 1
  local col    = 11
-
- local pos = {x, y, z}
 
  local la1 = addv(rotate_z(-radius, 0, 0, roll), pos)
  local la2 = addv(rotate_z(-radius-axle, 0, 0, roll), pos)
@@ -156,7 +154,7 @@ function draw_tie(x, y, z, roll)
  local pra2 = projectv(ra2)
 
  -- cockpit
- local cockpit = project(x, y, z)
+ local cockpit = projectv(pos)
  local dx = pla1.x - cockpit.x
  local dy = pla1.y - cockpit.y
  local cr = sqrt(dx*dx + dy*dy)
@@ -205,9 +203,9 @@ end
 
 function update_ties()
  for idx, tie in pairs(ties) do
-  tie[3] -= 0.5
-  tie[4] += tie[5]
-  if tie[3] < 0 then
+  tie.pos[3] -= 0.5
+  tie.roll += tie.angvel
+  if tie.pos[3] < 0 then
    --sfx(2)
    ties[idx] = random_tie(50)
   end
@@ -216,7 +214,7 @@ end
 
 function draw_ties()
  for tie in all(ties) do
-  draw_tie(tie[1], tie[2], tie[3], xwing.roll+tie[4])
+  draw_tie(tie.pos, xwing.roll+tie.roll)
  end
 end
 
