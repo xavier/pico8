@@ -177,7 +177,7 @@ function fire_torpedo()
 end
 
 
-function update_laser()
+function update_lasers()
  for laser in all(lasers) do
   laser.pos[3] += 0.5
   if laser.pos[3] > 20 then
@@ -551,7 +551,7 @@ end
 function _update()
  frame += 1
  handle_input()
- update_laser()
+ update_lasers()
  update_starfield()
  update_ties()
  update_xwing()
