@@ -893,7 +893,12 @@ xwing_logo = {
   {14, 2},
   {16, 2},
   {16, 1},
-  {15, 1}
+  {15, 1},
+  -- box
+  {-1, -1},
+  {17, -1},
+  {17, 3},
+  {-1, 3}
  },
  lines = {
   -- x
@@ -920,6 +925,11 @@ xwing_logo = {
   {24, 25},
   {25, 26},
   {26, 27},
+  -- box
+  {28, 29},
+  {29, 30},
+  {30, 31},
+  {31, 28}
  }
 }
 
@@ -954,7 +964,7 @@ function draw_intro()
  else
   draw_starfield()
 
-  draw_xwing_logo(10)
+  draw_xwing_logo()
 
   if xwing_logo.z <= 0 then
    if not intro_tune_played then
@@ -969,9 +979,13 @@ function draw_intro()
 end
 
 function draw_xwing_logo(col)
- for l in all(xwing_logo.lines) do
+ for idx, l in pairs(xwing_logo.lines) do
   local p1 = xwing_logo.vertices[l[1]].prj
   local p2 = xwing_logo.vertices[l[2]].prj
+  local col = 10
+  if idx > 18 then
+   col = 9
+  end
   line(p1.x, p1.y, p2.x, p2.y, col)
  end
 end
