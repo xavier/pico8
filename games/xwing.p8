@@ -49,7 +49,7 @@ function sqr(x)
 end
 
 function rnd_sign(x)
- if rnd(1) == 0 then
+ if rnd(10) < 5 then
   return x
  else
   return -x
@@ -159,7 +159,11 @@ xwing = {
  roll = 0,
  lasers_level = 1,
  shields_level = 1,
- score = 0
+ score = 0,
+ damage = {
+  counter = 0,
+  cracks = {}
+ }
 }
 
 lasers = {}
@@ -490,17 +494,85 @@ function draw_xwing()
  spr(3, xwing.shake_x+0, xwing.shake_y+120, 1, 1, false)
  spr(3, xwing.shake_x+120, xwing.shake_y+80, 1, 1, true)
  spr(3, xwing.shake_x+120, xwing.shake_y+120, 1, 1, true)
+
+ if xwing.damage.counter > 0 then
+  draw_damage(xwing.damage)
+ end
+end
+
+function draw_damage(damage)
+ local palette
+ if damage.counter < 20 then
+  palette = {1}
+ elseif damage.counter < 60 then
+  palette = {12, 1}
+ else
+  palette = {7, 12, 1}
+ end
+ for idx, segments in pairs(damage.cracks) do
+  local col = palette[idx]
+  if col then
+   for seg in all(segments) do
+    line(seg[1], seg[2], seg[3], seg[4], col)
+   end
+  end
+ end
+end
+
+function new_cracks()
+
+ local cracks  = { {}, {}, {} }
+ local phase   = rnd(100)*0.01
+ local ncracks = 3+rnd(2)
+
+ local x1 = 64 + 50-rnd(100)
+ local y1 = 20+rnd(50)
+ if y1 > 50 then -- don't show crack in the middle
+  y1 += 40
+ end
+
+ for i=1,ncracks do
+  local angle1 = (phase+i/ncracks) + rnd(10)*0.01
+  local len = 3+rnd(4)
+  local x2 = x1 + cos(angle1)*len
+  local y2 = y1 + sin(angle1)*len
+  add(cracks[1], {x1, y1, x2, y2})
+
+  for j=1,1+rnd(2) do
+   local angle2 = angle1+rnd_sign(rnd(10)*0.0175)
+   local len = 8+rnd(6)
+   local x3 = x2 + cos(angle2)*len
+   local y3 = y2 + sin(angle2)*len
+   add(cracks[2], {x2, y2, x3, y3})
+
+   for k=1,1+rnd(2) do
+    local angle3 = angle2+rnd_sign(rnd(10)*0.02)
+    local len = 10+rnd(4)
+    local x4 = x3 + cos(angle3)*len
+    local y4 = y3 + sin(angle3)*len
+
+    add(cracks[3], {x3, y3, x4, y4})
+   end
+  end
+ end
+
+ return cracks
+
 end
 
 -- xwing
 
 function update_xwing()
  -- autorepair
- xwing.lasers_level  = min(1, xwing.lasers_level+0.005)
- xwing.shields_level = min(1, xwing.shields_level+0.001)
+ xwing.lasers_level  = min(1, xwing.lasers_level + 0.005)
+ xwing.shields_level = min(1, xwing.shields_level + 0.001)
+ -- damage
+ xwing.damage.counter = max(0, xwing.damage.counter - 1)
 end
 
 function take_hit(amount)
+ xwing.damage.counter = 30*(3+rnd(2))
+ xwing.damage.cracks = new_cracks()
  xwing.shields_level = max(0, xwing.shields_level - amount)
 end
 
@@ -615,7 +687,7 @@ function _draw()
  draw_particles()
  draw_hud()
  draw_xwing()
- draw_debug()
+ --draw_debug()
 end
 
 
