@@ -439,7 +439,10 @@ function draw_meters()
  draw_meter(5, xwing.shields_level, 3, 11)
 
  local str = ""..xwing.score
- print(str, 64 - (#str * 2), 0, 7)
+ while #str < 6 do
+  str = "0"..str
+ end
+ print(str, 64 - 6*2, 1, 7)
 
  draw_meter(91, xwing.lasers_level, 9, 10)
  print("l", 124, 1, 7)
