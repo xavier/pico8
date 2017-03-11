@@ -545,7 +545,7 @@ comlink = {
    "standing by",
    "all wings report in",
    "hold tight",
-   "Switch your deflectors on",
+   "switch your deflectors on",
    "double front!",
    "cut the chatter!",
    "this is it, boys!",
