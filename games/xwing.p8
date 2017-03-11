@@ -317,12 +317,16 @@ end
 
 function random_tie(depth)
  local r = rnd(10)
+
+ local pos={5-rnd(10), 5-rnd(10), depth}
+ local aggr=rnd(10)
+
  if r <= 7 then
   -- straight
-  return {pos={5-rnd(10), 5-rnd(10), depth}, roll=0, angvel=0}
+  return {pos=pos, roll=0, angvel=0, aggr=aggr}
  else
   -- spinner
-  return {pos={5-rnd(10), 5-rnd(10), depth}, roll=rnd(100)/100, angvel=rnd_sign(rnd(10)/1000)}
+  return {pos=pos, roll=rnd(100)/100, angvel=rnd_sign(rnd(10)/1000), aggr=aggr}
  end
 end
 
@@ -424,14 +428,22 @@ function update_ties()
   else
    tie.pos[3] -= 0.5
    tie.roll += tie.angvel
+
    if tie.pos[3] < 0 then
-    -- colision with tie
+    -- fly by player
     if abs(tie.pos[1]-scene_cam[1]) < 2 and abs(tie.pos[2]-scene_cam[2]) < 2 then
+     -- colision with tie
      sfx(2)
      take_hit(0.2)
     end
     -- spawn new tie
     ties[idx] = random_tie(50)
+   else
+    -- enemy fire
+    if flr(frame % (tie.aggr*20)) == 0 then
+     sfx(3)
+     -- todo: enemy lasers
+    end
    end
   end
  end
