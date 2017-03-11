@@ -651,7 +651,6 @@ function draw_crosshair()
  spr(1, x+space, y-space, 1, 1, true, false)
  spr(1, x-space-8, y+space+8, 1, 1, false, true)
  spr(1, x+space, y+space+8, 1, 1, true, true)
- spr(n,x,y,w,h,flip_x,flip_y)
 end
 
 function draw_meters()
