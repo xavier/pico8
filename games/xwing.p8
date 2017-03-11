@@ -852,6 +852,8 @@ function draw_debug()
  print("l"..#lasers, 0, 16, col)
  print("t"..#ties, 0, 22, col)
  print("p"..#particles_pool, 0, 28, col)
+ print("cpu"..stat(1), 0, 34, col)
+ print("mem"..stat(0), 0, 40, col)
 end
 
 -- intro
