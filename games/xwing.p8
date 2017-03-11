@@ -498,6 +498,124 @@ function draw_starfield()
  end
 end
 
+-- comlink
+
+comlink = {
+ message = nil,
+ silence = 30*5,
+ counter = 0,
+ authors = {
+  {
+   "pico leader",
+   "pico two",
+   "pico three",
+   "pico five",
+  },
+  {
+   "zeta one",
+   "delta two",
+   "beta six",
+   "tau seven",
+  }
+ },
+ messages = {
+  {
+   "stay on target, pico eight!",
+   "use the force, pico eight!",
+   "i can't shake'em",
+   "there are too many of them!",
+   "loosen up!",
+   "tie squadron, incoming!",
+   "stabilize your rear deflectors",
+   "watch for enemy fighters",
+   "my r2 unit has a bad motivator!",
+   "it's no good, i can't maneuver!",
+   "lock s-foils in attack position",
+   "may the force be with you!",
+   "accelerate to attack speed",
+   "standing by",
+   "all wings report in",
+   "hold tight",
+   "Switch your deflectors on",
+   "double front!",
+   "cut the chatter!",
+   "this is it, boys!",
+   "draw their fire",
+   "heavy fire boss, twenty degrees!",
+   "are you all right?",
+   "watch yourself!",
+   "enemy fighters coming our way",
+   "we have picked up new signals",
+   "my scope is negative",
+   "keep up your visual scanning",
+   "i can't see it, where is he?",
+   "tie fighters, coming in!",
+   "i'm hit but not bad",
+   "heavy fire zone ahead",
+   "hold on",
+   "stay in attack formation",
+   "keep your eyes open!",
+   "there's too much interference",
+   "coming in point three five!",
+   "i see them!"
+  },
+  {
+   "die, rebel scum!",
+   "you are no match for the empire!",
+   "this silly rebelion ends today!",
+   "wipe them out, all of them!"
+  }
+ }
+}
+
+function update_comlink()
+ if comlink.counter == 0 and comlink.silence > 0 then
+  comlink.silence -= 1
+ else
+  if comlink.counter > 0 then
+   comlink.counter -= 1
+  else
+   comlink.silence = 30*(5+rnd(5))
+   comlink.counter = 30*3
+   comlink.message = new_comlink_message()
+  end
+ end
+end
+
+function new_comlink_message()
+ local rebel = rnd(100) < 90
+ if rebel then
+  return {
+   col1=11,
+   col2=3,
+   author=rnditem(comlink.authors[1]),
+   text=rnditem(comlink.messages[1])
+  }
+ else
+  return {
+   col1=9,
+   col2=8,
+   author=rnditem(comlink.authors[2]),
+   text=rnditem(comlink.messages[2])
+  }
+ end
+end
+
+function rnditem(t)
+ return t[1+flr(rnd(#t))]
+end
+
+function draw_comlink()
+ if comlink.counter > 0 then
+  printc(comlink.message.author..":", 101, comlink.message.col1)
+  printc(comlink.message.text, 108, comlink.message.col2)
+ end
+end
+
+function printc(str, y, col)
+ print(str, 64-#str*2, y, col)
+end
+
 -- hud
 
 function draw_hud()
@@ -694,6 +812,7 @@ function _update()
  update_ties()
  update_xwing()
  update_particles()
+ update_comlink()
 end
 
 function _draw()
@@ -703,8 +822,9 @@ function _draw()
  draw_ties()
  draw_particles()
  draw_hud()
+ draw_comlink()
  draw_xwing()
- --draw_debug()
+ draw_debug()
 end
 
 
