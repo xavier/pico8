@@ -972,8 +972,8 @@ function draw_game()
  draw_ties()
  draw_particles()
  draw_hud()
- draw_comlink()
  draw_xwing()
+ draw_comlink()
  --draw_debug()
 end
 
