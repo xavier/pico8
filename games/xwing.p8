@@ -172,6 +172,10 @@ end
 
 lasers = {}
 
+function init_lasers()
+ lasers = {}
+end
+
 function fire_laser()
  local x, y
 
@@ -984,6 +988,7 @@ end
 function start_game()
  init_xwing()
  init_ties()
+ init_lasers()
 
  set_callbacks(update_game, draw_game)
 end
