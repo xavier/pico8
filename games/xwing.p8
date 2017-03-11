@@ -84,7 +84,7 @@ function particle_explosion(x, y, n)
  end
 end
 
-function particle_shockwave(x, y, energy, speed)
+function particle_shockwave(x, y, energy, speed, col)
  particles_add({
   pos_x  = x,
   pos_y  = y,
@@ -92,7 +92,7 @@ function particle_shockwave(x, y, energy, speed)
   radius = 0,
   nrg    = energy,
   dcy    = 1/energy,
-  col    = 12,
+  col    = col,
   shock  = true
  })
 end
@@ -403,10 +403,11 @@ function update_ties()
      xwing.score += 1
      local pos = projectv(tie.pos)
      if laser.torpedo then
-      particle_shockwave(pos.x, pos.y, 32, 2)
+      particle_shockwave(pos.x, pos.y, 16, 1, 12)
+      particle_shockwave(pos.x, pos.y, 32, 2, 13)
       particle_explosion(pos.x, pos.y, 10)
      else
-      particle_explosion(pos.x, pos.y, 10+rnd(10))
+      particle_explosion(pos.x, pos.y, 10+rnd(20))
      end
      break
     end
