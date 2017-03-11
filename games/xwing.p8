@@ -188,7 +188,7 @@ function fire_laser()
  local laser = {
   pos=rotate_z(scene_cam[1]-x*4, scene_cam[2]-y-2, 0, xwing.roll),
   col=9,
-  blast_radius=1
+  blast_radius=1.5
  }
 
  local cannon_aim = {scene_cam[1], scene_cam[2], 20}
