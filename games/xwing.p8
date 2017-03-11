@@ -678,7 +678,7 @@ function draw_warnings()
   blink("> shields low <", 30, 8)
  end
  if xwing.lasers_level < 0.2 then
-  blink("> weapons low <", 100, 9)
+  blink("> weapons low <", 90, 9)
  end
 end
 
