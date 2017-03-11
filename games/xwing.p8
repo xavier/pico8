@@ -4,23 +4,16 @@ __lua__
 
 -- entities
 
-xwing = {
- cannon = 0,
- shake_x = 0,
- shake_y = 0,
- roll = 0,
- lasers_level = 1,
- shields_level = 1,
- score = 0,
- damage = {
-  counter = 0,
-  cracks = {}
- }
-}
+xwing = {}
 
 -- math
 
 scene_cam = {0, 0, -2.5, 64}
+
+function reset_scene_cam()
+ scene_cam[1] = 0
+ scene_cam[2] = 0
+end
 
 function rotate_y(x, y, z, angle)
  local co, si = cos(angle), sin(angle)
@@ -319,6 +312,7 @@ end
 ties = {}
 
 function init_ties()
+ ties = {}
  for i=1,2 do
   add(ties, random_tie(20+i*20))
  end
@@ -440,9 +434,8 @@ function update_ties()
 
    if tie.pos[3] < 0 then
     -- fly by player
-    if abs(tie.pos[1]-scene_cam[1]) < 2 and abs(tie.pos[2]-scene_cam[2]) < 2 then
+    if abs(tie.pos[1]-scene_cam[1]) < 2 and abs(tie.pos[2]-scene_cam[2]) < 2 and not xwing.destroyed then
      -- colision with tie
-     sfx(2)
      take_hit(0.2)
     end
     -- spawn new tie
@@ -475,11 +468,11 @@ end
 stars = {}
 
 function init_starfield()
+ stars = {}
  for i=1,20 do
   add(stars, {20-rnd(40), 20-rnd(40), rnd(20)})
  end
 end
-
 
 function update_starfield()
  for star in all(stars) do
@@ -489,7 +482,6 @@ function update_starfield()
   end
  end
 end
-
 
 function draw_starfield()
  for star in all(stars) do
@@ -706,18 +698,47 @@ end
 
 -- xwing
 
+function init_xwing()
+ xwing = {
+  cannon = 0,
+  shake_x = 0,
+  shake_y = 0,
+  roll = 0,
+  lasers_level = 1,
+  shields_level = 1,
+  score = 0,
+  damage = {
+   counter = 0,
+   cracks = {}
+  },
+  destroyed = false
+ }
+end
+
 function update_xwing()
- -- autorepair
- xwing.lasers_level  = min(1, xwing.lasers_level + 0.005)
- xwing.shields_level = min(1, xwing.shields_level + 0.001)
- -- damage
- xwing.damage.counter = max(0, xwing.damage.counter - 1)
+ if xwing.destroyed then
+  scene_cam[1] = 10*cos(frame * 0.001)
+  scene_cam[2] = 10*sin(frame * 0.0015)
+  xwing.roll = sin(frame * 0.0025)
+ else
+  -- autorepair
+  xwing.lasers_level  = min(1, xwing.lasers_level + 0.005)
+  xwing.shields_level = min(1, xwing.shields_level + 0.001)
+  -- damage
+  xwing.damage.counter = max(0, xwing.damage.counter - 1)
+ end
 end
 
 function take_hit(amount)
+ sfx(2)
  xwing.damage.counter = 30*(3+rnd(2))
  xwing.damage.cracks = new_cracks()
  xwing.shields_level = max(0, xwing.shields_level - amount)
+ if xwing.shields_level <= 0.001 then
+  -- gameover
+  xwing.destroyed = true
+  sfx(16)
+ end
 end
 
 function bank(angle)
@@ -736,40 +757,50 @@ end
 
 
 function handle_input()
- if btn(0) then -- left
-  scene_cam[1] -= 0.5
-  xwing.shake_x = -2
-  bank(0.01)
- elseif btn(1) then -- right
-  scene_cam[1] += 0.5
-  xwing.shake_x = 2
-  bank(-0.01)
+ if xwing.destroyed then
+  -- gameover
+  if btnp(4) then
+   start_intro()
+   return false -- halt update
+  end
  else
-  unbank(0.02)
- end
+  if btn(0) then -- left
+   scene_cam[1] -= 0.5
+   xwing.shake_x = -2
+   bank(0.01)
+  elseif btn(1) then -- right
+   scene_cam[1] += 0.5
+   xwing.shake_x = 2
+   bank(-0.01)
+  else
+   unbank(0.02)
+  end
 
- if btn(2) then -- up
-  scene_cam[2] += 0.5
-  xwing.shake_y = 2
- elseif btn(3) then -- down
-  scene_cam[2] -= 0.5
-  xwing.shake_y = -2
- else
-  xwing.shake_x = 0
-  xwing.shake_y = 0
- end
+  if btn(2) then -- up
+   scene_cam[2] += 0.5
+   xwing.shake_y = 2
+  elseif btn(3) then -- down
+   scene_cam[2] -= 0.5
+   xwing.shake_y = -2
+  else
+   xwing.shake_x = 0
+   xwing.shake_y = 0
+  end
 
- if btnp(4) then
-  if xwing.lasers_level > 0.01 then
-   fire_laser()
-   sfx(0)
+  if btnp(4) then
+   if xwing.lasers_level > 0.01 then
+    fire_laser()
+    sfx(0)
+   end
+  end
+
+  if btnp(5) then
+   fire_torpedo()
+   sfx(1)
   end
  end
 
- if btnp(5) then
-  fire_torpedo()
-  sfx(1)
- end
+ return true
 end
 
 -- debug
@@ -797,12 +828,10 @@ function draw_debug()
  end
 
  -- resources
-
  print("f"..frame, 0, 10, col)
  print("l"..#lasers, 0, 16, col)
  print("t"..#ties, 0, 22, col)
  print("p"..#particles_pool, 0, 28, col)
-
 end
 
 -- intro
@@ -874,7 +903,7 @@ xwing_logo = {
 }
 
 function init_intro()
- xwing_logo.z = 30
+ xwing_logo.z      = 30
  intro_tune_played = false
 end
 
@@ -928,9 +957,12 @@ end
 
 -- main state management
 
-frame = 0
 
 function start_intro()
+ reset_scene_cam()
+
+ frame = 0
+
  init_starfield()
  init_intro()
 
@@ -950,19 +982,21 @@ function update_intro()
 end
 
 function start_game()
+ init_xwing()
  init_ties()
 
  set_callbacks(update_game, draw_game)
 end
 
 function update_game()
- handle_input()
- update_lasers()
- update_starfield()
- update_ties()
- update_xwing()
- update_particles()
- update_comlink()
+ if handle_input() then
+  update_lasers()
+  update_starfield()
+  update_ties()
+  update_xwing()
+  update_particles()
+  update_comlink()
+ end
 end
 
 function draw_game()
@@ -971,9 +1005,16 @@ function draw_game()
  draw_lasers()
  draw_ties()
  draw_particles()
- draw_hud()
- draw_xwing()
- draw_comlink()
+ if xwing.destroyed then
+  -- gameover screen
+  printc("game over", 32, frame / 2)
+  printc("press fire to continue", 100, frame / 2)
+ else
+  -- gameplay
+  draw_hud()
+  draw_xwing()
+  draw_comlink()
+ end
  --draw_debug()
 end
 
@@ -1160,7 +1201,7 @@ __map__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
-000100000c100130502c0502b0502805025050210501d0501b05018050160501405012050100500d0500b0500905007050060500605007050090500c0500e0500f0500c050070500205001050000000000000000
+000100000c050130502c0502b0502805025050210501d0501b05018050160501405012050100500d0500b0500905007050060500605007050090500c0500e0500f0500c050070500205001050000000000000000
 00030000184501745016450154501345012450104500e4500d4500b45009450094500745003450064500345002450024500145002450044500245001450014500000000000000000000000000000000000000000
 000200001b6501a65018650096501565009650100500f0500e0500d0500c0500b0500b0500b0500a0500a05008050080400704006040050400404002040010300303001020010100301005010030100201001000
 00010000260502605025050240500000000000000001805017050160501405012050100500f0500d0500000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1176,7 +1217,7 @@ __sfx__
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00010000321501c150201501f1501e1501d150191501715014150101500a1500a1500b15022150020501c15017150160500e1500d0500a1500615003150021500115008050000000000000000000000000000000
+000500000735004650086500d65011650186501b6501c6501c6501c6501c6501a650086501565013650106500e6500c6500a64008640066400464003630026300262001620016100161001610016100160000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
