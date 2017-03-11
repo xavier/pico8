@@ -22,6 +22,15 @@ xwing = {
 
 scene_cam = {0, 0, -2.5, 64}
 
+function rotate_y(x, y, z, angle)
+ local co, si = cos(angle), sin(angle)
+ return {
+  z*si + x*co,
+  y,
+  z*co - x*si
+ }
+end
+
 function rotate_z(x, y, z, angle)
  local co, si = cos(angle), sin(angle)
  return {
@@ -796,16 +805,152 @@ function draw_debug()
 
 end
 
--- main
+-- intro
 
-function _init()
- frame = 0
- init_starfield()
- init_ties()
+splash_duration = 30 * 3
+
+xwing_logo = {
+ vertices = {
+  -- x
+  {0, 0},
+  {2, 0},
+  {0, 2},
+  {2, 2},
+  -- -
+  {3, 1},
+  {4, 1},
+  -- w
+  {5, 0},
+  {5, 2},
+  {6, 1},
+  {7, 2},
+  {7, 0},
+  -- i
+  {8, 0},
+  {10, 0},
+  {8, 2},
+  {10, 2},
+  {9, 0},
+  {9, 2},
+  -- n
+  {11, 2},
+  {11, 0},
+  {13, 2},
+  {13, 0},
+  -- g
+  {16, 0},
+  {14, 0},
+  {14, 2},
+  {16, 2},
+  {16, 1},
+  {15, 1}
+ },
+ lines = {
+  -- x
+  {1, 4},
+  {2, 3},
+  -- -
+  {5, 6},
+  -- w
+  {7, 8},
+  {8, 9},
+  {9, 10},
+  {10, 11},
+  -- i
+  {12, 13},
+  {14, 15},
+  {16, 17},
+  -- n
+  {18, 19},
+  {19, 20},
+  {20, 21},
+  -- g
+  {22, 23},
+  {23, 24},
+  {24, 25},
+  {25, 26},
+  {26, 27},
+ }
+}
+
+function init_intro()
+ xwing_logo.z = 30
 end
 
-function _update()
- frame += 1
+function update_intro_anim()
+ if frame < splash_duration then
+  return
+ end
+ for vertex in all(xwing_logo.vertices) do
+  local v = {(8-vertex[1])*0.25, (1.5-vertex[2])*0.25, 0}
+  v = rotate_y(v[1], v[2], v[3], frame*0.01)
+  v[3] += xwing_logo.z
+  vertex.prj = projectv(v)
+ end
+ if xwing_logo.z > 0 then
+  xwing_logo.z -= 0.5
+ end
+end
+
+function draw_intro()
+ cls()
+
+ if frame < splash_duration then
+  local palette = { 1, 13, 12, 12, 12, 12, 12, 12, 12, 13, 1}
+  local col = palette[1+flr(frame*(#palette/splash_duration))]
+  print("a long time ago in a galaxy far", 0, 58, col)
+  print("far away...", 0, 64, col)
+ else
+  draw_starfield()
+
+  draw_xwing_logo(10)
+
+  if xwing_logo.z <= 0 then
+   printc("pico squadron", 80, 9)
+
+   printc("press fire to start", 100, frame/2)
+  end
+ end
+end
+
+function draw_xwing_logo(col)
+ for l in all(xwing_logo.lines) do
+  local p1 = xwing_logo.vertices[l[1]].prj
+  local p2 = xwing_logo.vertices[l[2]].prj
+  line(p1.x, p1.y, p2.x, p2.y, col)
+ end
+end
+
+-- main state management
+
+frame = 0
+
+function start_intro()
+ init_starfield()
+ init_intro()
+
+ set_callbacks(update_intro, draw_intro)
+end
+
+function update_intro()
+
+ update_starfield()
+ update_intro_anim()
+
+ if btnp(4) then
+  sfx(10)
+  start_game()
+ end
+
+end
+
+function start_game()
+ init_ties()
+
+ set_callbacks(update_game, draw_game)
+end
+
+function update_game()
  handle_input()
  update_lasers()
  update_starfield()
@@ -815,7 +960,7 @@ function _update()
  update_comlink()
 end
 
-function _draw()
+function draw_game()
  cls()
  draw_starfield()
  draw_lasers()
@@ -824,9 +969,24 @@ function _draw()
  draw_hud()
  draw_comlink()
  draw_xwing()
- draw_debug()
+ --draw_debug()
 end
 
+function with_frame_counter(update_fun)
+ return function()
+  frame += 1
+  update_fun()
+ end
+end
+
+function set_callbacks(update_fun, draw_fun)
+ _update = with_frame_counter(update_fun)
+ _draw   = draw_fun
+end
+
+-- main
+
+start_intro()
 
 __gfx__
 00000000000000000000000000000000000000770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -1005,7 +1165,7 @@ __sfx__
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00060000016500165002650026500465006650096500c65010650146501b65021650276502d65032650396503f6503f6503f6503f6503e650376503065028650196500f6500c6500865005650056500465001650
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
