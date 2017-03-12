@@ -320,7 +320,7 @@ ties = {}
 function init_ties()
  ties = {}
  for i=1,2 do
-  add(ties, random_tie(20+i*20))
+  add(ties, random_tie(40+i*20))
  end
 end
 
@@ -456,7 +456,7 @@ function update_ties()
   if tie.destroyed then
    tie.respawn -= 1
    if tie.respawn <= 0 then
-    ties[idx] = random_tie(50)
+    ties[idx] = random_tie(60)
    end
   else
    tie.pos[3] -= 0.5
