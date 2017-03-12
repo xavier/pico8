@@ -196,7 +196,8 @@ function fire_laser()
 
  local laser = {
   pos=rotate_z(scene_cam[1]-x*4, scene_cam[2]-y-2, 0, xwing.roll),
-  col=9,
+  nearcol=9,
+  farcol=4,
   blast_radius=1.5
  }
 
@@ -221,23 +222,40 @@ function new_torpedo(pos)
  return {
   pos=pos,
   vel={0,0,0.25},
-  col=13,
-  torpedo=true,
-  blast_radius=2
+  nearcol=12,
+  farcol=13,
+  blast_radius=2,
+  torpedo=true
+ }
+end
+
+function tie_fire_laser(tie)
+ local left_laser = new_tie_laser(tie.pos, -0.1, tie.roll)
+ local right_laser = new_tie_laser(tie.pos, 0.1, tie.roll)
+
+ add(lasers, left_laser)
+ add(lasers, right_laser)
+end
+
+function new_tie_laser(pos, xoffset, roll)
+ return {
+  pos=rotate_z(pos[1]+xoffset, pos[2]-0.75, pos[3]-1, roll),
+  vel={0,0,-0.75},
+  nearcol=11,
+  farcol=11, -- 3
+  blast_radius=1,
+  tie=true
  }
 end
 
 
 function update_lasers()
  for laser in all(lasers) do
-  laser.pos = addv(laser.pos, laser.vel)
-  if laser.pos[3] > 20 then
-   laser.col = 0
-  elseif laser.pos[3] > 10 then
-   if laser.torpedo then
-    laser.col = 1
-   else
-    laser.col = 4
+  if not laser.dead then
+   laser.pos = addv(laser.pos, laser.vel)
+   local z = laser.pos[3]
+   if (not laser.tie and z > 20) or z < 0 then
+    laser.dead = true
    end
   end
  end
@@ -245,9 +263,16 @@ end
 
 function draw_lasers()
  for laser in all(lasers) do
-  local p1 = project(laser.pos[1], laser.pos[2], laser.pos[3])
-  local p2 = project(laser.pos[1], laser.pos[2], laser.pos[3]+2)
-  line(p1.x, p1.y, p2.x, p2.y, laser.col)
+  if not laser.dead then
+   local z  = laser.pos[3]
+   local p1 = project(laser.pos[1], laser.pos[2], z)
+   local p2 = project(laser.pos[1], laser.pos[2], z+2)
+   local col = laser.nearcol
+   if z > 10 then
+    col = laser.farcol
+   end
+   line(p1.x, p1.y, p2.x, p2.y, col)
+  end
  end
 end
 
@@ -328,22 +353,24 @@ function random_tie(depth)
  local r = rnd(10)
 
  local pos={5-rnd(10), 5-rnd(10), depth}
- local aggr=rnd(10)
+ local aggr=20+rnd(50)
 
  if r <= 7 then
   -- straight
-  return {pos=pos, roll=0, angvel=0, aggr=aggr}
+  return {pos=pos, vel=0.25, roll=0, angvel=0, aggr=aggr}
  else
   -- spinner
-  return {pos=pos, roll=rnd(100)/100, angvel=rndsign(rnd(10)/1000), aggr=aggr}
+  return {pos=pos, vel=0.25, roll=rnd(100)/100, angvel=rndsign(rnd(10)/1000), aggr=aggr}
  end
 end
 
 
 function draw_tie(pos, roll)
- local radius = 1
- local axle   = 1
- local col    = 11
+ local radius       = 1
+ local axle         = 1
+ local col_hull     = 5
+ local col_wing     = 6
+ local col_viewport = 13 --6
 
  local la1 = addv(rotate_z(-radius, 0, 0, roll), pos)
  local la2 = addv(rotate_z(-radius-axle, 0, 0, roll), pos)
@@ -358,17 +385,17 @@ function draw_tie(pos, roll)
  -- cockpit
  local cockpit_pos = projectv(pos)
  local cockpit_rad = sqrt(sqr(pla1.x-cockpit_pos.x) + sqr(pla1.y-cockpit_pos.y))
- circ(cockpit_pos.x, cockpit_pos.y, cockpit_rad, col)
+ circ(cockpit_pos.x, cockpit_pos.y, cockpit_rad, col_hull)
 
- draw_tie_viewport(cockpit_pos.x, cockpit_pos.y, cockpit_rad*0.6, roll, col)
+ draw_tie_viewport(cockpit_pos.x, cockpit_pos.y, cockpit_rad*0.6, roll, col_viewport)
 
  -- axles
- line(pla1.x, pla1.y, pla2.x, pla2.y, col)
- line(pra1.x, pra1.y, pra2.x, pra2.y, col)
+ line(pla1.x, pla1.y, pla2.x, pla2.y, col_hull)
+ line(pra1.x, pra1.y, pra2.x, pra2.y, col_hull)
 
  -- wings
- draw_tie_wing(la2, roll, col)
- draw_tie_wing(ra2, roll, col)
+ draw_tie_wing(la2, roll, col_hull, col_wing)
+ draw_tie_wing(ra2, roll, col_hull, col_wing)
 
 end
 
@@ -397,7 +424,7 @@ function draw_tie_viewport(cx, cy, outer_radius, roll, col)
  end
 end
 
-function draw_tie_wing(pos, roll, col)
+function draw_tie_wing(pos, roll, col_hull, col_wing)
  local wing_vertices = {
   {0, 0, 0},
   {0, 2, 1},
@@ -415,41 +442,28 @@ function draw_tie_wing(pos, roll, col)
 
  for i=2,7 do
   local x, y = points[i].x, points[i].y
-  line(points[1].x, points[1].y, x, y, col)
+  line(points[1].x, points[1].y, x, y, col_wing)
  end
 
- line(points[2].x, points[2].y, points[3].x, points[3].y, col)
- line(points[3].x, points[3].y, points[4].x, points[4].y, col)
- line(points[4].x, points[4].y, points[5].x, points[5].y, col)
- line(points[5].x, points[5].y, points[6].x, points[6].y, col)
- line(points[6].x, points[6].y, points[7].x, points[7].y, col)
- line(points[7].x, points[7].y, points[2].x, points[2].y, col)
+ line(points[2].x, points[2].y, points[3].x, points[3].y, col_hull)
+ line(points[3].x, points[3].y, points[4].x, points[4].y, col_hull)
+ line(points[4].x, points[4].y, points[5].x, points[5].y, col_hull)
+ line(points[5].x, points[5].y, points[6].x, points[6].y, col_hull)
+ line(points[6].x, points[6].y, points[7].x, points[7].y, col_hull)
+ line(points[7].x, points[7].y, points[2].x, points[2].y, col_hull)
 
 end
 
 function update_ties()
 
  for laser in all(lasers) do
-  if laser.col != 0 then
-   for tie in all(ties) do
-    if not tie.destroyed and distv(laser.pos, tie.pos) < laser.blast_radius then
-     sfx(4+rnd(3))
-     tie.destroyed = true
-     tie.respawn = 30*(2+rnd(3))
-     laser.col = 0
-     xwing.score += 1
-     local pos = projectv(tie.pos)
-     if laser.torpedo then
-      particle_shockwave(pos.x, pos.y, 16, 1, 12)
-      particle_shockwave(pos.x, pos.y, 32, 2, 13)
-      particle_explosion(pos.x, pos.y, 10)
-     else
-      particle_explosion(pos.x, pos.y, 10+rnd(20))
-     end
-     break
-    end
+  if not laser.dead then
+   if laser.tie then
+    detect_xwing_collision(laser)
+   else
+    detect_tie_collision(laser)
    end
-  end
+  end -- not dead
  end
 
  for idx, tie in pairs(ties) do
@@ -459,7 +473,7 @@ function update_ties()
     ties[idx] = random_tie(60)
    end
   else
-   tie.pos[3] -= 0.5
+   tie.pos[3] -= tie.vel
    tie.roll += tie.angvel
 
    if tie.pos[3] < 0 then
@@ -472,14 +486,42 @@ function update_ties()
     ties[idx] = random_tie(50)
    else
     -- enemy fire
-    if flr(frame % (tie.aggr*20)) == 0 then
+    if flr(frame % tie.aggr) == 0 then
      sfx(3)
-     -- todo: enemy lasers
+     tie_fire_laser(tie)
     end
    end
   end
  end
 
+end
+
+function detect_xwing_collision(laser)
+ if not xwing.destroyed and distv(laser.pos, {scene_cam[1], scene_cam[2], 0}) < laser.blast_radius then
+  take_hit(0.1)
+  laser.dead = true
+ end
+end
+
+function detect_tie_collision(laser)
+ for tie in all(ties) do
+  if not tie.destroyed and distv(laser.pos, tie.pos) < laser.blast_radius then
+   sfx(4+rnd(3))
+   tie.destroyed = true
+   tie.respawn = 30*(2+rnd(3))
+   laser.dead = true
+   xwing.score += 1
+   local pos = projectv(tie.pos)
+   if laser.torpedo then
+    particle_shockwave(pos.x, pos.y, 16, 1, 12)
+    particle_shockwave(pos.x, pos.y, 32, 2, 13)
+    particle_explosion(pos.x, pos.y, 10)
+   else
+    particle_explosion(pos.x, pos.y, 20+rnd(20))
+   end
+   break
+  end
+ end
 end
 
 
@@ -845,7 +887,7 @@ function handle_input()
   end
 
   if btnp(4) then
-   if xwing.lasers_level > 0.01 then
+   if xwing.lasers_level > 0.1 then
     fire_laser()
     sfx(0)
    end
@@ -878,7 +920,7 @@ function draw_debug()
   print(tie.pos[3], p.x, p.y, col)
  end
  for laser in all(lasers) do
-  if laser.col != 0 then
+  if not laser.dead then
    local p = projectv(laser.pos)
    print(laser.pos[3], p.x, p.y, col)
   end
