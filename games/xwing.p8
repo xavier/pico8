@@ -444,7 +444,7 @@ function draw_tie(tie, roll)
 end
 
 function draw_tie_viewport(cx, cy, outer_radius, roll, col)
- if outer_radius  < 1 then
+ if outer_radius < 1 then
   return
  end
 
