@@ -66,7 +66,7 @@ function sqr(x)
  return x*x
 end
 
-function rnd_sign(x)
+function rndsign(x)
  if rnd(10) < 5 then
   return x
  else
@@ -273,14 +273,14 @@ function new_cracks()
   add(cracks[1], {x1, y1, x2, y2})
 
   for j=1,1+rnd(2) do
-   local angle2 = angle1+rnd_sign(rnd(10)*0.0175)
+   local angle2 = angle1+rndsign(rnd(10)*0.0175)
    local len = 8+rnd(6)
    local x3 = x2 + cos(angle2)*len
    local y3 = y2 + sin(angle2)*len
    add(cracks[2], {x2, y2, x3, y3})
 
    for k=1,1+rnd(2) do
-    local angle3 = angle2+rnd_sign(rnd(10)*0.02)
+    local angle3 = angle2+rndsign(rnd(10)*0.02)
     local len = 10+rnd(4)
     local x4 = x3 + cos(angle3)*len
     local y4 = y3 + sin(angle3)*len
@@ -335,7 +335,7 @@ function random_tie(depth)
   return {pos=pos, roll=0, angvel=0, aggr=aggr}
  else
   -- spinner
-  return {pos=pos, roll=rnd(100)/100, angvel=rnd_sign(rnd(10)/1000), aggr=aggr}
+  return {pos=pos, roll=rnd(100)/100, angvel=rndsign(rnd(10)/1000), aggr=aggr}
  end
 end
 
