@@ -352,15 +352,16 @@ end
 function random_tie(depth)
  local r = rnd(10)
 
- local pos={5-rnd(10), 5-rnd(10), depth}
- local aggr=20+rnd(50)
+ local pos  = {rndsign(rnd(20)), rndsign(rnd(20)), depth}
+ local aggr = 20+rnd(50)
+ local vel  = 0.25+rnd(10)*0.01
 
  if r <= 7 then
   -- straight
-  return {pos=pos, vel=0.25, roll=0, angvel=0, aggr=aggr}
+  return {pos=pos, vel=vel, roll=0, angvel=0, aggr=aggr}
  else
   -- spinner
-  return {pos=pos, vel=0.25, roll=rnd(100)/100, angvel=rndsign(rnd(10)/1000), aggr=aggr}
+  return {pos=pos, vel=vel, roll=rnd(100)/100, angvel=rndsign(rnd(10)/1000), aggr=aggr}
  end
 end
 
