@@ -384,42 +384,63 @@ function random_tie(depth)
   angvel = rndsign(rnd(10)/1000)
  end
 
- return {pos=pos, vel=vel, roll=roll, angvel=angvel, aggr=aggr, destseq=60}
+ return {pos=pos, vel=vel, roll=roll, angvel=angvel, aggr=aggr, destseq=60, destseed=nil}
 end
 
 
-function draw_tie(pos, roll)
+function draw_tie(tie, roll)
  local radius       = 1
  local axle         = 1
  local col_hull     = 5
  local col_wing     = 6
  local col_viewport = 13 --6
 
- local la1 = addv(rotate_z(-radius, 0, 0, roll), pos)
- local la2 = addv(rotate_z(-radius-axle, 0, 0, roll), pos)
- local ra1 = addv(rotate_z(radius, 0, 0, roll), pos)
- local ra2 = addv(rotate_z(radius+axle, 0, 0, roll), pos)
+ local la1 = addv(rotate_z(-radius, 0, 0, roll), tie.pos)
+ local la2 = addv(rotate_z(-radius-axle, 0, 0, roll), tie.pos)
+ local ra1 = addv(rotate_z(radius, 0, 0, roll), tie.pos)
+ local ra2 = addv(rotate_z(radius+axle, 0, 0, roll), tie.pos)
 
  local pla1 = projectv(la1)
  local pla2 = projectv(la2)
  local pra1 = projectv(ra1)
  local pra2 = projectv(ra2)
 
- -- cockpit
- local cockpit_pos = projectv(pos)
- local cockpit_rad = sqrt(sqr(pla1.x-cockpit_pos.x) + sqr(pla1.y-cockpit_pos.y))
- circ(cockpit_pos.x, cockpit_pos.y, cockpit_rad, col_hull)
+ if tie.destroyed then
+  -- destruction sequence
+  local progress = (60-tie.destseq)/60
+  local blast = {(12+tie.destseed%19)*progress, 0, 0}
 
- draw_tie_viewport(cockpit_pos.x, cockpit_pos.y, cockpit_rad*0.6, roll, col_viewport)
+  local langvel = 2+(tie.destseed%97)*0.025
+  local rangvel = 2+(bnot(tie.destseed)%97)*0.025
+  local lroll = roll-progress*langvel
+  local rroll = roll+progress*rangvel
 
- -- axles
- line(pla1.x, pla1.y, pla2.x, pla2.y, col_hull)
- line(pra1.x, pra1.y, pra2.x, pra2.y, col_hull)
+  if progress > 0.9 then
+   col_wing = 1
+   col_hull = 0
+  elseif progress > 0.8 then
+   col_hull = 1
+   col_wing = 5
+  end
 
- -- wings
- draw_tie_wing(la2, roll, col_hull, col_wing)
- draw_tie_wing(ra2, roll, col_hull, col_wing)
+  draw_tie_wing(subv(la2, blast), lroll, col_hull, col_wing)
+  draw_tie_wing(addv(ra2, blast), rroll, col_hull, col_wing)
 
+ else
+  -- cockpit
+  local cockpit_pos = projectv(tie.pos)
+  local cockpit_rad = sqrt(sqr(pla1.x-cockpit_pos.x) + sqr(pla1.y-cockpit_pos.y))
+  circ(cockpit_pos.x, cockpit_pos.y, cockpit_rad, col_hull)
+  draw_tie_viewport(cockpit_pos.x, cockpit_pos.y, cockpit_rad*0.6, roll, col_viewport)
+
+  -- axles
+  line(pla1.x, pla1.y, pla2.x, pla2.y, col_hull)
+  line(pra1.x, pra1.y, pra2.x, pra2.y, col_hull)
+
+  -- wings
+  draw_tie_wing(la2, roll, col_hull, col_wing)
+  draw_tie_wing(ra2, roll, col_hull, col_wing)
+ end
 end
 
 function draw_tie_viewport(cx, cy, outer_radius, roll, col)
@@ -491,9 +512,13 @@ function update_ties()
 
  for idx, tie in pairs(ties) do
   if tie.destroyed then
-   tie.respawn -= 1
-   if tie.respawn <= 0 then
-    ties[idx] = random_tie(60)
+   if tie.destseq > 0 then
+    tie.destseq -= 1
+   else
+    tie.respawn -= 1
+    if tie.respawn <= 0 then
+     ties[idx] = random_tie(60)
+    end
    end
   else
    tie.pos[3] -= tie.vel
@@ -533,6 +558,7 @@ function detect_tie_collision(laser)
   if not tie.destroyed and distv(laser.pos, tie.pos) <= (laser.blast_radius*2) then
    sfx(4+rnd(3))
    tie.destroyed = true
+   tie.destseed = frame
    tie.respawn = 30*(2+rnd(3))
    laser.dead = true
    xwing.score += 1
@@ -558,10 +584,8 @@ end
 
 function draw_ties()
  for tie in all(ties) do
-  if tie.destroyed then
-   -- todo: draw destruction sequence
-  else
-   draw_tie(tie.pos, xwing.roll+tie.roll)
+  if tie.destseq > 0 then
+   draw_tie(tie, xwing.roll+tie.roll)
   end
  end
 end
@@ -955,6 +979,7 @@ function draw_debug()
  for tie in all(ties) do
   local p = projectv(tie.pos)
   print(tie.pos[3], p.x, p.y, col)
+  print(tie.destseq, p.x, p.y+6, 8)
  end
  for laser in all(lasers_pool) do
   if not laser.dead then
