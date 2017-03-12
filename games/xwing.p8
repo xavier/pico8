@@ -1134,8 +1134,8 @@ function draw_game()
   printc("press fire to continue", 100, frame / 2)
  else
   -- gameplay
-  draw_hud()
   draw_xwing()
+  draw_hud()
   draw_comlink()
  end
  --draw_debug()
