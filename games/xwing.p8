@@ -367,7 +367,12 @@ end
 function random_tie(depth)
  local r = rnd(10)
 
- local pos  = {rndsign(rnd(20)), rndsign(rnd(20)), depth}
+ local spread = 10
+ if xwing.level > 1 then
+  spread = 20
+ end
+
+ local pos  = {rndsign(rnd(spread)), rndsign(rnd(spread)), depth}
  local aggr = 20+rnd(50)
  local vel  = 0.25+rnd(10)*0.01
 
@@ -529,6 +534,12 @@ function detect_tie_collision(laser)
    tie.respawn = 30*(2+rnd(3))
    laser.dead = true
    xwing.score += 1
+   if xwing.score % 10 == 0 then
+    xwing.level += 1
+    if #ties < 3 then
+     add(ties, random_tie(50))
+    end
+   end
    local pos = projectv(tie.pos)
    if laser.torpedo then
     particle_shockwave(pos.x, pos.y, 16, 1, 12)
@@ -823,6 +834,7 @@ function init_xwing()
   lasers_level = 1,
   shields_level = 1,
   score = 0,
+  level = 0,
   damage = {
    counter = 0,
    cracks = {}
