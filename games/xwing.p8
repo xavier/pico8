@@ -361,7 +361,8 @@ function draw_tie(pos, roll)
  local dy = pla1.y - cockpit.y
  local cr = sqrt(dx*dx + dy*dy)
  circ(cockpit.x, cockpit.y, cr, col)
- circ(cockpit.x, cockpit.y, cr*0.6, col)
+
+ draw_tie_viewport(cockpit.x, cockpit.y, cr*0.6, roll, col)
 
  -- axles
  line(pla1.x, pla1.y, pla2.x, pla2.y, col)
@@ -371,6 +372,31 @@ function draw_tie(pos, roll)
  draw_wing(la2, roll, col)
  draw_wing(ra2, roll, col)
 
+end
+
+function draw_tie_viewport(cx, cy, outer_radius, roll, col)
+ if outer_radius  < 1 then
+  return
+ end
+
+ local angle = roll
+ local inner_radius = outer_radius*0.5
+ local ox1 = cx + outer_radius*cos(angle)
+ local oy1 = cy + outer_radius*sin(angle)
+ local ix1 = cx + inner_radius*cos(angle)
+ local iy1 = cy + inner_radius*sin(angle)
+ for i=1,8 do
+  angle += 0.125
+  local ox2 = cx + outer_radius*cos(angle)
+  local oy2 = cy + outer_radius*sin(angle)
+  local ix2 = cx + inner_radius*cos(angle)
+  local iy2 = cy + inner_radius*sin(angle)
+  line(ox1, oy1, ox2, oy2, col)
+  line(ix1, iy1, ix2, iy2, col)
+  line(ox1, oy1, ix1, iy1, col)
+  ox1, oy1 = ox2, oy2
+  ix1, iy1 = ix2, iy2
+ end
 end
 
 function draw_wing(pos, roll, col)
