@@ -170,10 +170,12 @@ end
 
 -- lasers
 
-lasers = {}
+lasers_pool = {}
+lasers_pool_index = 0
+lasers_pool_size  = 256
 
 function init_lasers()
- lasers = {}
+ lasers_pool = {}
 end
 
 function fire_laser()
@@ -205,7 +207,7 @@ function fire_laser()
 
  laser.vel = normv(subv(cannon_aim, laser.pos))
 
- add(lasers, laser)
+ add_laser(laser)
 
  xwing.lasers_level = max(0, xwing.lasers_level - 0.05)
 end
@@ -214,8 +216,8 @@ function fire_torpedo()
  local left_torpedo  = new_torpedo(rotate_z(scene_cam[1]-0.5, scene_cam[2]-2, 0, xwing.roll))
  local right_torpedo = new_torpedo(rotate_z(scene_cam[1]+0.5, scene_cam[2]-2, 0, xwing.roll))
 
- add(lasers, left_torpedo)
- add(lasers, right_torpedo)
+ add_laser(left_torpedo)
+ add_laser(right_torpedo)
 end
 
 function new_torpedo(pos)
@@ -233,8 +235,8 @@ function tie_fire_laser(tie)
  local left_laser = new_tie_laser(tie.pos, -0.1, tie.roll)
  local right_laser = new_tie_laser(tie.pos, 0.1, tie.roll)
 
- add(lasers, left_laser)
- add(lasers, right_laser)
+ add_laser(left_laser)
+ add_laser(right_laser)
 end
 
 function new_tie_laser(pos, xoffset, roll)
@@ -248,9 +250,22 @@ function new_tie_laser(pos, xoffset, roll)
  }
 end
 
+function add_laser(laser)
+ local i = 0
+ while i < lasers_pool_size do
+  if lasers_pool[lasers_pool_index] == nil or lasers_pool[lasers_pool_index].dead then
+   lasers_pool[lasers_pool_index] = laser
+   return
+  else
+   lasers_pool_index += 1
+   lasers_pool_index %= lasers_pool_size
+   i += 1
+  end
+ end
+end
 
 function update_lasers()
- for laser in all(lasers) do
+ for laser in all(lasers_pool) do
   if not laser.dead then
    laser.pos = addv(laser.pos, laser.vel)
    local z = laser.pos[3]
@@ -262,7 +277,7 @@ function update_lasers()
 end
 
 function draw_lasers()
- for laser in all(lasers) do
+ for laser in all(lasers_pool) do
   if not laser.dead then
    local z  = laser.pos[3]
    local p1 = project(laser.pos[1], laser.pos[2], z)
@@ -457,7 +472,7 @@ end
 
 function update_ties()
 
- for laser in all(lasers) do
+ for laser in all(lasers_pool) do
   if not laser.dead then
    if laser.tie then
     detect_xwing_collision(laser)
@@ -923,7 +938,7 @@ function draw_debug()
   local p = projectv(tie.pos)
   print(tie.pos[3], p.x, p.y, col)
  end
- for laser in all(lasers) do
+ for laser in all(lasers_pool) do
   if not laser.dead then
    local p = projectv(laser.pos)
    print(laser.pos[3], p.x, p.y, col)
@@ -932,9 +947,9 @@ function draw_debug()
 
  -- resources
  print("f"..frame, 0, 10, col)
- print("l"..#lasers, 0, 16, col)
- print("t"..#ties, 0, 22, col)
+ print("l"..#lasers_pool, 0, 16, col)
  print("p"..#particles_pool, 0, 28, col)
+ print("t"..#ties, 0, 22, col)
  print("cpu"..stat(1), 0, 34, col)
  print("mem"..stat(0), 0, 40, col)
 end
