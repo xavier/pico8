@@ -838,7 +838,11 @@ function update_xwing()
   xwing.roll = sin(frame * 0.0025)
  else
   -- autorepair
-  xwing.lasers_level  = min(1, xwing.lasers_level + 0.005)
+  local laser_repair = 0.005
+  if xwing.lasers_level < 0.1 then
+   laser_repair = 0.001
+  end
+  xwing.lasers_level  = min(1, xwing.lasers_level + laser_repair)
   xwing.shields_level = min(1, xwing.shields_level + 0.001)
   -- damage
   xwing.damage.counter = max(0, xwing.damage.counter - 1)
