@@ -1130,7 +1130,7 @@ function draw_game()
  draw_particles()
  if xwing.destroyed then
   -- gameover screen
-  printc("game over", 32, frame / 2)
+  printc("game over", 32, 12+(flr(frame / 4) % 2))
   printc("press fire to continue", 100, frame / 2)
  else
   -- gameplay
