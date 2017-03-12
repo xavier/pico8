@@ -488,7 +488,9 @@ function update_ties()
    else
     -- enemy fire
     if flr(frame % tie.aggr) == 0 then
-     sfx(3)
+     if not xwing.destroyed then
+      sfx(3)
+     end
      tie_fire_laser(tie)
     end
    end
