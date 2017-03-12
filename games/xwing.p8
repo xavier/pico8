@@ -448,7 +448,7 @@ function draw_tie_viewport(cx, cy, outer_radius, roll, col)
   return
  end
 
- local angle = roll
+ local angle = -roll
  local inner_radius = outer_radius*0.5
  local ox1 = cx + outer_radius*cos(angle)
  local oy1 = cy + outer_radius*sin(angle)
