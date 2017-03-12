@@ -542,7 +542,7 @@ stars = {}
 
 function init_starfield()
  stars = {}
- for i=1,20 do
+ for i=1,40 do
   add(stars, {20-rnd(40), 20-rnd(40), rnd(20)})
  end
 end
@@ -560,9 +560,9 @@ function draw_starfield()
  for star in all(stars) do
   local z = star[3]
   local p = projectv(rotate_z(star[1], star[2], z, xwing.roll))
-  if z > 10 then
+  if z > 15 then
    pset(p.x, p.y, 1)
-  elseif z > 8 then
+  elseif z > 10 then
    pset(p.x, p.y, 5)
   elseif z > 5 then
    pset(p.x, p.y, 6)
