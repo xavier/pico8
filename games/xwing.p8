@@ -528,7 +528,7 @@ end
 
 function detect_tie_collision(laser)
  for tie in all(ties) do
-  if not tie.destroyed and distv(laser.pos, tie.pos) < laser.blast_radius then
+  if not tie.destroyed and distv(laser.pos, tie.pos) <= (laser.blast_radius*2) then
    sfx(4+rnd(3))
    tie.destroyed = true
    tie.respawn = 30*(2+rnd(3))
