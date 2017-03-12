@@ -701,13 +701,19 @@ comlink = {
    "keep your eyes open!",
    "there's too much interference",
    "coming in point three five!",
-   "i see them!"
+   "i see them!",
+   "don't get cocky, kid!",
+   "i'm on it!",
+   "good shot, pico eight!",
+   "that was too close...",
+   "pico eight, pull in!"
   },
   {
    "die, rebel scum!",
    "you are no match for the empire!",
    "this silly rebelion ends today!",
-   "wipe them out, all of them!"
+   "wipe them out, all of them!",
+   "tk1138, do you copy?"
   }
  }
 }
