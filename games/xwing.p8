@@ -410,7 +410,7 @@ function draw_tie_wing(pos, roll, col)
 
  local points = {}
  for v in all(wing_vertices) do
-  add(points, projectv(addv(rotate_z(v[1], v[2], v[3], roll), pos)))
+  add(points, projectv(addv(rotate_z(v[1], v[2]*1.2, v[3], roll), pos)))
  end
 
  for i=2,7 do
