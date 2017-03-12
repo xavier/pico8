@@ -622,7 +622,7 @@ function update_comlink()
   if comlink.counter > 0 then
    comlink.counter -= 1
   else
-   comlink.silence = 30*(5+rnd(5))
+   comlink.silence = 30*(3+rnd(3))
    comlink.counter = 30*3
    comlink.message = new_comlink_message()
   end
