@@ -801,6 +801,7 @@ function init_xwing()
   cannon_hot = 0,
   shake_x = 0,
   shake_y = 0,
+  vel = 0.6,
   roll = 0,
   lasers_level = 1,
   shields_level = 1,
@@ -865,11 +866,11 @@ function handle_input()
   end
  else
   if btn(0) then -- left
-   scene_cam[1] -= 0.5
+   scene_cam[1] -= xwing.vel
    xwing.shake_x = -2
    bank(0.01)
   elseif btn(1) then -- right
-   scene_cam[1] += 0.5
+   scene_cam[1] += xwing.vel
    xwing.shake_x = 2
    bank(-0.01)
   else
@@ -877,10 +878,10 @@ function handle_input()
   end
 
   if btn(2) then -- up
-   scene_cam[2] += 0.5
+   scene_cam[2] += xwing.vel
    xwing.shake_y = 2
   elseif btn(3) then -- down
-   scene_cam[2] -= 0.5
+   scene_cam[2] -= xwing.vel
    xwing.shake_y = -2
   else
    xwing.shake_x = 0
