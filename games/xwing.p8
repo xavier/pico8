@@ -412,8 +412,8 @@ function draw_tie(tie, roll)
 
   local langvel = 2+(tie.destseed%97)*0.025
   local rangvel = 2+(bnot(tie.destseed)%97)*0.025
-  local lroll = roll-progress*langvel
-  local rroll = roll+progress*rangvel
+  local lspin = roll-progress*langvel
+  local rspin = roll+progress*rangvel
 
   if progress > 0.9 then
    col_wing = 1
@@ -423,8 +423,8 @@ function draw_tie(tie, roll)
    col_wing = 5
   end
 
-  draw_tie_wing(subv(la2, blast), lroll, col_hull, col_wing)
-  draw_tie_wing(addv(ra2, blast), rroll, col_hull, col_wing)
+  draw_tie_wing(subv(la2, blast), lspin, col_hull, col_wing)
+  draw_tie_wing(addv(ra2, blast), rspin, col_hull, col_wing)
 
  else
   -- cockpit
