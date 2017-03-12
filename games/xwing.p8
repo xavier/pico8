@@ -1053,7 +1053,9 @@ function draw_intro()
     sfx(32)
     intro_tune_played = true
    end
-   printc("pico squadron", 80, 9)
+
+   printc("pico squadron", 81, 4)
+   printc("pico squadron", 80, 10)
 
    printc("press fire to start", 100, frame/2)
   end
