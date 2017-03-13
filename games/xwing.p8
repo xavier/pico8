@@ -851,9 +851,11 @@ function cannon_spr(n)
  end
 end
 
-function draw_damage()
- if xwing.damage.counter > 0 then
-  draw_cracks(xwing.damage)
+function draw_damages()
+ for damage in all(xwing.damages) do
+  if damage.counter > 0 then
+   draw_cracks(damage)
+  end
  end
 end
 
@@ -872,10 +874,8 @@ function init_xwing()
   shields_level = 1,
   score = 0,
   level = 0,
-  damage = {
-   counter = 0,
-   cracks = {}
-  },
+  damage_index = 0,
+  damages = {},
   destroyed = false,
   crosshair_lock = false
  }
@@ -908,13 +908,22 @@ function update_xwing()
   end
  end
  -- damage
- xwing.damage.counter = max(0, xwing.damage.counter - 1)
+ for damage in all(xwing.damages) do
+  damage.counter = max(0, damage.counter - 1)
+ end
 end
 
 function take_hit(amount)
  sfx(2)
- xwing.damage.counter = 30*(3+rnd(2))
- xwing.damage.cracks = new_cracks()
+
+ local new_damage = {
+  counter = 30*(3+rnd(2)),
+  cracks = new_cracks()
+ }
+
+ xwing.damages[xwing.damage_index] = new_damage
+ xwing.damage_index = flr((xwing.damage_index + 1) % 5) -- max damage
+
  xwing.shields_level = max(0, xwing.shields_level - amount)
  if xwing.shields_level <= 0.001 then
   -- gameover
@@ -1013,10 +1022,11 @@ function draw_debug()
  -- resources
  print("f"..frame, 0, 10, col)
  print("l"..#lasers_pool, 0, 16, col)
- print("p"..#particles_pool, 0, 28, col)
- print("t"..#ties, 0, 22, col)
- print("cpu"..stat(1), 0, 34, col)
- print("mem"..stat(0), 0, 40, col)
+ print("p"..#particles_pool, 0, 22, col)
+ print("t"..#ties, 0, 28, col)
+ print("d"..#xwing.damages, 0, 34, col)
+ print("cpu"..stat(1), 0, 50, col)
+ print("mem"..stat(0), 0, 56, col)
 end
 
 -- intro
@@ -1211,13 +1221,13 @@ function draw_game()
  draw_particles()
  if xwing.destroyed then
   -- gameover screen
-  draw_damage()
+  draw_damages()
   printc("game over", 32, 12+(flr(frame / 4) % 2))
   printc("press fire to continue", 100, frame / 2)
  else
   -- gameplay
   draw_xwing()
-  draw_damage()
+  draw_damages()
   draw_hud()
   draw_comlink()
  end
