@@ -334,7 +334,7 @@ function new_cracks()
 
 end
 
-function draw_damage(damage)
+function draw_cracks(damage)
  local palette
  if damage.counter < 20 then
   palette = {1}
@@ -841,10 +841,6 @@ function draw_xwing()
  spr(cannon_spr(1), xwing.shake_x+0,   xwing.shake_y+120, 1, 1, false)
  spr(cannon_spr(2), xwing.shake_x+0,   xwing.shake_y+80,  1, 1, false)
  spr(cannon_spr(3), xwing.shake_x+120, xwing.shake_y+80,  1, 1, true)
-
- if xwing.damage.counter > 0 then
-  draw_damage(xwing.damage)
- end
 end
 
 function cannon_spr(n)
@@ -852,6 +848,12 @@ function cannon_spr(n)
   return 19
  else
   return 3
+ end
+end
+
+function draw_damage()
+ if xwing.damage.counter > 0 then
+  draw_cracks(xwing.damage)
  end
 end
 
@@ -892,8 +894,6 @@ function update_xwing()
   end
   xwing.lasers_level  = min(1, xwing.lasers_level + laser_repair)
   xwing.shields_level = min(1, xwing.shields_level + 0.001)
-  -- damage
-  xwing.damage.counter = max(0, xwing.damage.counter - 1)
   -- cannon sprite
   xwing.cannon_hot = max(0, xwing.cannon_hot - 1)
   -- crosshair
@@ -907,6 +907,8 @@ function update_xwing()
    end
   end
  end
+ -- damage
+ xwing.damage.counter = max(0, xwing.damage.counter - 1)
 end
 
 function take_hit(amount)
@@ -1209,11 +1211,13 @@ function draw_game()
  draw_particles()
  if xwing.destroyed then
   -- gameover screen
+  draw_damage()
   printc("game over", 32, 12+(flr(frame / 4) % 2))
   printc("press fire to continue", 100, frame / 2)
  else
   -- gameplay
   draw_xwing()
+  draw_damage()
   draw_hud()
   draw_comlink()
  end
