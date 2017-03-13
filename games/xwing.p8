@@ -268,10 +268,66 @@ function update_lasers()
  for laser in all(lasers_pool) do
   if not laser.dead then
    laser.pos = addv(laser.pos, laser.vel)
+   -- clip
    local z = laser.pos[3]
    if (not laser.tie and z > 20) or z < 0 then
     laser.dead = true
    end
+   -- collision
+   if laser.tie then
+    detect_xwing_collision(laser)
+   else
+    detect_tie_collision(laser)
+    detect_mine_collision(laser)
+   end
+  end
+ end
+end
+
+function detect_xwing_collision(laser)
+ if not xwing.destroyed and distv(laser.pos, {scene_cam[1], scene_cam[2], 0}) < laser.blast_radius then
+  take_hit(0.1)
+  laser.dead = true
+ end
+end
+
+function detect_tie_collision(laser)
+ for tie in all(ties) do
+  if not tie.destroyed and distv(laser.pos, tie.pos) <= (laser.blast_radius*2) then
+   sfx(4+rnd(3))
+   tie.destroyed = true
+   tie.destseed = frame
+   tie.respawn = 30*(2+rnd(3))
+   laser.dead = true
+   xwing.score += 1
+   if xwing.score % 10 == 0 then
+    xwing.level += 1
+    if #ties < 3 then
+     add(ties, random_tie(50))
+    end
+   end
+   local pos = projectv(tie.pos)
+   if laser.torpedo then
+    particle_shockwave(pos.x, pos.y, 16, 1, 12)
+    particle_shockwave(pos.x, pos.y, 32, 2, 13)
+    particle_explosion(pos.x, pos.y, 10)
+   else
+    particle_explosion(pos.x, pos.y, 20+rnd(20))
+   end
+   break
+  end
+ end
+end
+
+function detect_mine_collision(laser)
+ for mine in all(mines) do
+  if not mine.destroyed and distv(laser.pos, mine.pos) <= (laser.blast_radius*3) then
+   sfx(4+rnd(3))
+   mine.destroyed = true
+   laser.dead = true
+   local pos = projectv(mine.pos)
+   particle_explosion(pos.x, pos.y, 20+rnd(20))
+   break
   end
  end
 end
@@ -499,17 +555,6 @@ function draw_tie_wing(pos, roll, col_hull, col_wing)
 end
 
 function update_ties()
-
- for laser in all(lasers_pool) do
-  if not laser.dead then
-   if laser.tie then
-    detect_xwing_collision(laser)
-   else
-    detect_tie_collision(laser)
-   end
-  end -- not dead
- end
-
  for idx, tie in pairs(ties) do
   if tie.destroyed then
    if tie.destseq > 0 then
@@ -546,48 +591,184 @@ function update_ties()
 
 end
 
-function detect_xwing_collision(laser)
- if not xwing.destroyed and distv(laser.pos, {scene_cam[1], scene_cam[2], 0}) < laser.blast_radius then
-  take_hit(0.1)
-  laser.dead = true
- end
-end
-
-function detect_tie_collision(laser)
- for tie in all(ties) do
-  if not tie.destroyed and distv(laser.pos, tie.pos) <= (laser.blast_radius*2) then
-   sfx(4+rnd(3))
-   tie.destroyed = true
-   tie.destseed = frame
-   tie.respawn = 30*(2+rnd(3))
-   laser.dead = true
-   xwing.score += 1
-   if xwing.score % 10 == 0 then
-    xwing.level += 1
-    if #ties < 3 then
-     add(ties, random_tie(50))
-    end
-   end
-   local pos = projectv(tie.pos)
-   if laser.torpedo then
-    particle_shockwave(pos.x, pos.y, 16, 1, 12)
-    particle_shockwave(pos.x, pos.y, 32, 2, 13)
-    particle_explosion(pos.x, pos.y, 10)
-   else
-    particle_explosion(pos.x, pos.y, 20+rnd(20))
-   end
-   break
-  end
- end
-end
-
-
 function draw_ties()
  for tie in all(ties) do
   if tie.destseq > 0 then
    draw_tie(tie, xwing.roll+tie.roll)
   end
  end
+end
+
+-- mines
+
+mines = {}
+minefield = {}
+
+function init_mines()
+ mines = {}
+ minefield = {
+  countdown = 30*10+rnd(8),
+  generation = 0
+ }
+end
+
+function deploy_mine_field(width, height, hspacing, vspacing)
+ for y=0,height-1 do
+  local my = (y-height*0.5) * vspacing
+  for x=0,width-1 do
+   local mx = (x-width*0.5) * hspacing
+   add_mine(new_mine(mx, my))
+  end
+ end
+end
+
+function deploy_circular_minefield(num, radius)
+ local mul = 1/num
+ for idx=0,num-1 do
+  local x = radius * cos(idx * mul)
+  local y = radius * sin(idx * mul)
+  add_mine(new_mine(x, y))
+ end
+end
+
+function new_mine(x, y)
+ return {
+  pos = {x, y, 40},
+  roll = rnd(100)*0.01,
+  angvel = rndsign(rnd(100)*0.0001),
+  proximity_radius = 30,
+  proximity = 0
+ }
+end
+
+function add_mine(mine)
+ local idx = 1
+ while idx < #mines do
+  idx += 1
+  if mines[idx].destroyed then
+   mines[idx] = mine
+  end
+ end
+ add(mines, mine)
+end
+
+function update_mines()
+
+ minefield.countdown = max(0, minefield.countdown - 1)
+
+ if minefield.countdown == 0 then
+  -- deploy new minefield
+  if (minefield.generation % 2) == 0 then
+   local size = mid(1, minefield.generation, 4)
+   deploy_mine_field(size, size, 70, 70)
+  else
+   deploy_circular_minefield(3+rnd(min(minefield.generation, 7)), 40)
+  end
+  minefield.generation += 1
+  minefield.countdown = 30*27
+ end
+
+ if (frame % 1337) == 0 then
+  add_mine(new_mine(20-rnd(40), 20-rnd(40)))
+ end
+
+ for mine in all(mines) do
+  if not mine.destroyed then
+   mine.pos[3] -= 0.1
+   mine.roll += mine.angvel
+
+   if mine.pos[3] < 0 then
+    mine.destroyed = true
+   else
+    local dist = distv(mine.pos, scene_cam)
+
+    if dist <= mine.proximity_radius then
+     mine.proximity = 1-(dist/mine.proximity_radius)
+    else
+     mine.proximity = 0
+    end
+
+    if not mine.warned and mine.proximity > 0.7 then
+     sfx(8)
+     mine.warned = true
+    end
+    if mine.proximity > 0.8 then
+     sfx(7)
+     mine.destroyed = true
+     local p = projectv(mine.pos)
+     particle_shockwave(p.x, p.y, 64, 3, 8)
+     particle_explosion(p.x, p.y, 30)
+     take_hit(0.3)
+    end
+
+   end
+  end
+ end
+end
+
+function draw_mines()
+ for mine in all(mines) do
+  if not mine.destroyed then
+   draw_mine(mine, xwing.roll)
+  end
+ end
+end
+
+function draw_mine(mine, roll)
+ local vertices = {
+  -- outline
+  {-0.5, 2},
+  {0.5, 2},
+  {2.5, -1},
+  {1.5, -2},
+  {-1.5, -2},
+  {-2.5, -1},
+  -- top light
+  {0, 1.5},
+  {0, 0.5},
+  -- right light
+  {1.5, -1},
+  {0.5, -1+0.525},
+  -- left light
+  {-1.5, -1},
+  {-0.5, -1+0.525}
+ }
+ local lines = {
+  {1, 2},
+  {2, 3},
+  {3, 4},
+  {4, 5},
+  {5, 6},
+  {6, 1}
+ }
+ local lights = {
+  {7, 8},
+  {9, 10},
+  {11, 12}
+ }
+ local scale = 0.65
+
+ local pos = mine.pos
+ local shape_col = 5
+ local light_pulse = {1, 2, 8, 8, 8, 2}
+ local light_col = light_pulse[1+flr((frame*0.05*mine.proximity)%5)]
+
+ for v in all(vertices) do
+  v.prj = projectv(addv(pos, rotate_z(v[1]*scale, v[2]*scale, pos[3], roll+mine.roll)))
+ end
+
+ for l in all(lines) do
+  local p1 = vertices[l[1]].prj
+  local p2 = vertices[l[2]].prj
+  line(p1.x, p1.y, p2.x, p2.y, shape_col)
+ end
+
+ for l in all(lights) do
+  local p1 = vertices[l[1]].prj
+  local p2 = vertices[l[2]].prj
+  line(p1.x, p1.y, p2.x, p2.y, light_col)
+ end
+
 end
 
 -- starfield
@@ -597,7 +778,7 @@ stars = {}
 function init_starfield()
  stars = {}
  for i=1,40 do
-  add(stars, {20-rnd(40), 20-rnd(40), rnd(20)})
+  add(stars, {40-rnd(80), 40-rnd(80), rnd(30)})
  end
 end
 
@@ -605,7 +786,7 @@ function update_starfield()
  for star in all(stars) do
   star[3] -= 0.2
   if star[3] < 0 then
-   star[3] = 20
+   star[3] = 30
   end
  end
 end
@@ -706,7 +887,10 @@ comlink = {
    "i'm on it!",
    "good shot, pico eight!",
    "that was too close...",
-   "pico eight, pull in!"
+   "pico eight, pull in!",
+   "minefield ahead",
+   "watch for those proximity mines!",
+   "sweep those proximity mines!"
   },
   {
    "die, rebel scum!",
@@ -877,7 +1061,8 @@ function init_xwing()
   damage_index = 0,
   damages = {},
   destroyed = false,
-  crosshair_lock = false
+  crosshair_lock = false,
+  flash = false
  }
 end
 
@@ -920,6 +1105,8 @@ function take_hit(amount)
   counter = 30*(3+rnd(2)),
   cracks = new_cracks()
  }
+
+ xwing.flash = true
 
  xwing.damages[xwing.damage_index] = new_damage
  xwing.damage_index = flr((xwing.damage_index + 1) % 5) -- max damage
@@ -1006,25 +1193,29 @@ function draw_debug()
 
  print(xwing.roll, 80, 20, col)
 
- -- depth
- for tie in all(ties) do
-  local p = projectv(tie.pos)
-  print(tie.pos[3], p.x, p.y, col)
-  print(tie.destseq, p.x, p.y+6, 8)
- end
- for laser in all(lasers_pool) do
-  if not laser.dead then
-   local p = projectv(laser.pos)
-   print(laser.pos[3], p.x, p.y, col)
-  end
- end
-
+ -- entities
+ -- for tie in all(ties) do
+ --  local p = projectv(tie.pos)
+ --  print(tie.pos[3], p.x, p.y, col)
+ --  print(tie.destseq, p.x, p.y+6, 8)
+ -- end
+ -- for laser in all(lasers_pool) do
+ --  if not laser.dead then
+ --   local p = projectv(laser.pos)
+ --   print(laser.pos[3], p.x, p.y, col)
+ --  end
+ -- end
+ -- for mine in all(mines) do
+ --  local p = projectv(mine.pos)
+ --  print(mine.proximity, p.x, p.y, 8)
+ -- end
  -- resources
  print("f"..frame, 0, 10, col)
  print("l"..#lasers_pool, 0, 16, col)
  print("p"..#particles_pool, 0, 22, col)
  print("t"..#ties, 0, 28, col)
- print("d"..#xwing.damages, 0, 34, col)
+ print("M"..#mines, 0, 34, col)
+ print("d"..#xwing.damages, 0, 40, col)
  print("cpu"..stat(1), 0, 50, col)
  print("mem"..stat(0), 0, 56, col)
 end
@@ -1196,6 +1387,7 @@ end
 function start_game()
  init_xwing()
  init_ties()
+ init_mines()
  init_lasers()
 
  set_callbacks(update_game, draw_game)
@@ -1206,6 +1398,7 @@ function update_game()
   update_lasers()
   update_starfield()
   update_ties()
+  update_mines()
   update_xwing()
   update_particles()
   update_comlink()
@@ -1213,10 +1406,17 @@ function update_game()
 end
 
 function draw_game()
- cls()
+
+ if xwing.flash then
+  cls(7)
+  xwing.flash = false
+ else
+  cls()
+ end
  draw_starfield()
  --draw_background_sprites()
  draw_lasers()
+ draw_mines()
  draw_ties()
  draw_particles()
  if xwing.destroyed then
@@ -1417,15 +1617,15 @@ __map__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __sfx__
-000100000c0502a65033050300502d0502905025050220501f0501d050190501805012050100500d0500b0500905007050060500605007050090500c0500e0500f0500c050090500705004050010500000000000
+000100000c0500c65033050300502d0502905025050220501f0501d050190501805012050100500d0500b0500905007050060500605007050090500c0500e0500f0500c050090500705004050010500000000000
 00030000184501745016450154501345012450104500e4500d4500b45009450094500745003450064500345002450024500145002450044500245001450014500000000000000000000000000000000000000000
 000200001b6501a65018650096501565009650100500f0500e0500d0500c0500b0500b0500b0500a0500a05008050080400704006040050400404002040010300303001020010100301005010030100201001000
 00010000260502605025050240500000000000000001805017050160501405012050100500f0500d0500000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000100001965014650106500d6500c6500a650096500865007650076500865005650000000b5500c5500c5500c5500b5500955006550045500760005600216501064002630026300262002600026000260001600
 000200000a050090500265002650036500e05004650110501205004650140500465015050150501305012050046500f050036500c050026500905004050076500465002640016400263001630016200161000000
 0001000000000082500825008250082500f6500c650082500000008250082501c6500825015250082500000007250126501365005250042500225001250012500b65009650076500565004650036500165000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000100001035003550053501b0501b05019050170501605015050140501305011050100500e0500c0500a0500705005050070500505006050080500a0500b0500c0500d0500a0500605005050040500305004050
+000800002934004300293400230029340000002934029340293402934029340000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00060000016500165002650026500465006650096500c65010650146501b65021650276502d65032650396503f6503f6503f6503f6503e650376503065028650196500f6500c6500865005650056500465001650
 001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
