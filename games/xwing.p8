@@ -1073,6 +1073,7 @@ function update_xwing()
   scene_cam[1] = 10*cos(frame * 0.001)
   scene_cam[2] = 10*sin(frame * 0.0015)
   xwing.roll = sin(frame * 0.0025)
+  xwing.gameover_delay = max(xwing.gameover_delay - 1, 0)
  else
   -- autorepair
   local laser_repair = 0.005
@@ -1117,6 +1118,7 @@ function take_hit(amount)
  if xwing.shields_level <= 0.001 then
   -- gameover
   xwing.destroyed = true
+  xwing.gameover_delay = 30*3
   sfx(16)
  end
 end
@@ -1139,7 +1141,7 @@ end
 function handle_input()
  if xwing.destroyed then
   -- gameover
-  if btnp(4) then
+  if xwing.gameover_delay == 0 and btnp(4) then
    start_intro()
    return false -- halt update
   end
@@ -1425,7 +1427,9 @@ function draw_game()
   -- gameover screen
   draw_damages()
   printc("game over", 32, 12+(flr(frame / 4) % 2))
-  printc("press fire to continue", 100, frame / 2)
+  if xwing.gameover_delay == 0 then
+   printc("press fire to continue", 100, frame / 2)
+  end
  else
   -- gameplay
   draw_xwing()
