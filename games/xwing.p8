@@ -302,7 +302,7 @@ function detect_tie_collision(laser)
    xwing.score += 1
    if xwing.score % 10 == 0 then
     xwing.level += 1
-    if #ties < 3 then
+    if #ties < 7 then
      add(ties, random_tie(50))
     end
    end
