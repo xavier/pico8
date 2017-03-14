@@ -429,7 +429,7 @@ function random_tie(depth)
  end
 
  local pos  = {rndsign(rnd(spread)), rndsign(rnd(spread)), depth}
- local aggr = 20+rnd(50)
+ local aggr = 20+rnd(max(50-10*xwing.level, 10))
  local vel  = 0.25+rnd(10)*0.01
 
  local roll    = 0
