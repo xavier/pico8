@@ -688,17 +688,19 @@ function update_mines()
      mine.proximity = 0
     end
 
-    if not mine.warned and mine.proximity > 0.7 then
-     sfx(8)
-     mine.warned = true
-    end
-    if mine.proximity > 0.8 then
-     sfx(7)
-     mine.destroyed = true
-     local p = projectv(mine.pos)
-     particle_shockwave(p.x, p.y, 64, 3, 8)
-     particle_explosion(p.x, p.y, 30)
-     take_hit(0.3)
+    if not xwing.destroyed then
+     if not mine.warned and mine.proximity > 0.7 then
+      sfx(8)
+      mine.warned = true
+     end
+     if mine.proximity > 0.8 then
+      sfx(7)
+      mine.destroyed = true
+      local p = projectv(mine.pos)
+      particle_shockwave(p.x, p.y, 64, 3, 8)
+      particle_explosion(p.x, p.y, 30)
+      take_hit(0.3)
+     end
     end
 
    end
