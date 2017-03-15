@@ -757,7 +757,8 @@ function draw_mine(mine, roll)
  local light_col = light_pulse[1+flr((frame*0.05*mine.proximity)%5)]
 
  for v in all(vertices) do
-  v.prj = projectv(addv(pos, rotate_z(v[1]*scale, v[2]*scale, pos[3], roll+mine.roll)))
+  local rotv =  addv(pos, rotate_z(v[1]*scale, v[2]*scale, pos[3], mine.roll))
+  v.prj = projectv(rotate_z(rotv[1], rotv[2], rotv[3], roll))
  end
 
  for l in all(lines) do
