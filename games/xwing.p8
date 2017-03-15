@@ -1063,7 +1063,10 @@ function init_xwing()
   torpedoes = 3,
   shake_x = 0,
   shake_y = 0,
-  vel = 0.6,
+  vel_x = 0,
+  vel_y = 0,
+  acc_x = 0,
+  acc_y = 0,
   roll = 0,
   lasers_level = 1,
   shields_level = 1,
@@ -1084,6 +1087,11 @@ function update_xwing()
   xwing.roll = sin(frame * 0.0025)
   xwing.gameover_delay = max(xwing.gameover_delay - 1, 0)
  else
+  -- motion
+  xwing.vel_x = min(xwing.vel_x+xwing.acc_x, 2) * 0.95
+  xwing.vel_y = min(xwing.vel_y+xwing.acc_y, 2) * 0.95
+  scene_cam[1] += xwing.vel_x
+  scene_cam[2] += xwing.vel_y
   -- autorepair
   local laser_repair = 0.005
   if xwing.lasers_level < 0.1 then
@@ -1155,26 +1163,30 @@ function handle_input()
    return false -- halt update
   end
  else
+  local acc = 0.1
+
   if btn(0) then -- left
-   scene_cam[1] -= xwing.vel
+   xwing.acc_x = -acc
    xwing.shake_x = -2
-   bank(0.01)
+   bank(0.005)
   elseif btn(1) then -- right
-   scene_cam[1] += xwing.vel
+   xwing.acc_x = acc
    xwing.shake_x = 2
-   bank(-0.01)
+   bank(-0.005)
   else
-   unbank(0.02)
+   xwing.acc_x = 0
+   xwing.shake_x = 0
+   unbank(0.005)
   end
 
   if btn(2) then -- up
-   scene_cam[2] += xwing.vel
+   xwing.acc_y = acc
    xwing.shake_y = 2
   elseif btn(3) then -- down
-   scene_cam[2] -= xwing.vel
+   xwing.acc_y = -acc
    xwing.shake_y = -2
   else
-   xwing.shake_x = 0
+   xwing.acc_y = 0
    xwing.shake_y = 0
   end
 
@@ -1234,8 +1246,12 @@ function draw_debug()
  print("t"..#ties, 0, 28, col)
  print("m"..#mines, 0, 34, col)
  print("d"..#xwing.damages, 0, 40, col)
- print("cpu"..stat(1), 0, 50, col)
- print("mem"..stat(0), 0, 56, col)
+ print("ax"..xwing.acc_x, 0, 46, col)
+ print("vx"..xwing.vel_x, 0, 52, col)
+ print("ay"..xwing.acc_y, 0, 58, col)
+ print("vy"..xwing.vel_y, 0, 64, col)
+ print("cpu"..stat(1), 0, 72, col)
+ print("mem"..stat(0), 0, 78, col)
 end
 
 -- intro
