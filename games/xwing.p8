@@ -625,7 +625,7 @@ end
 
 function deploy_circular_minefield(num, radius)
  local mul = 1/num
- for idx=0,num-1 do
+ for idx=0,num do
   local x = radius * cos(idx * mul)
   local y = radius * sin(idx * mul)
   add_mine(new_mine(x, y))
