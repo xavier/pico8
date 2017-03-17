@@ -5,6 +5,9 @@ __lua__
 -- entities
 
 xwing = {}
+settings = {
+ yaxis = 1
+}
 
 -- math
 
@@ -1180,11 +1183,11 @@ function handle_input()
   end
 
   if btn(2) then -- up
-   xwing.acc_y = acc
-   xwing.shake_y = 2
+   xwing.acc_y = acc * settings.yaxis
+   xwing.shake_y = 2 * settings.yaxis
   elseif btn(3) then -- down
-   xwing.acc_y = -acc
-   xwing.shake_y = -2
+   xwing.acc_y = -acc * settings.yaxis
+   xwing.shake_y = -2 * settings.yaxis
   else
    xwing.acc_y = 0
    xwing.shake_y = 0
@@ -1483,6 +1486,8 @@ function set_callbacks(update_fun, draw_fun)
 end
 
 -- main
+
+menuitem(1, "invert y-axis", function() settings.yaxis = -settings.yaxis end)
 
 start_intro()
 
