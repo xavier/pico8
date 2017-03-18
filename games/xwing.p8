@@ -784,7 +784,10 @@ stars = {}
 
 function init_starfield()
  stars = {}
- for i=1,40 do
+ for i=1,10 do
+  add(stars, {20-rnd(40), 20-rnd(40), rnd(20)})
+ end
+ for i=1,30 do
   add(stars, {40-rnd(80), 40-rnd(80), rnd(30)})
  end
 end
@@ -1261,7 +1264,7 @@ end
 
 splash_duration = 30 * 3
 
-xwing_logo = {
+logo = {
  vertices = {
   -- x
   {0, 0},
@@ -1335,23 +1338,110 @@ xwing_logo = {
  }
 }
 
+crawl = {
+ text = {
+  "  the rebel alliance ",
+  "   is under attack!  ",
+  "                     ",
+  "  surrounded by the  ",
+  "emperor's most elite ",
+  "troops, a small team ",
+  "of fierce pilots must",
+  "escape from a massive",
+  "blockade...          ",
+  "                     ",
+  "      scramble,      ",
+  "    pico squadron!   "
+ },
+ font_base = 8*2,
+ font_metrics = {
+  a = {0, 0},
+  b = {4, 0},
+  c = {8, 0},
+  d = {12, 0},
+  e = {16, 0},
+  f = {20, 0},
+  g = {24, 0},
+  h = {28, 0},
+  i = {32, 0},
+  j = {36, 0},
+  k = {40, 0},
+  l = {44, 0},
+  m = {48, 0},
+  n = {52, 0},
+  o = {56, 0},
+  p = {60, 0},
+  q = {64, 0},
+  r = {68, 0},
+  s = {72, 0},
+  t = {76, 0},
+  u = {80, 0},
+  v = {84, 0},
+  w = {88, 0},
+  x = {92, 0},
+  y = {96, 0},
+  z = {100, 0},
+  [" "] = {104, 0},
+  ["."] = {108, 0},
+  ["!"] = {112, 0},
+  ["'"] = {116, 0},
+  [","] = {120, 0},
+ },
+ height=120,
+ line_widths = {},
+ pos=0
+}
+
 function init_intro()
- xwing_logo.z      = 30
+ logo.z      = 30
  intro_tune_played = false
+ intro_crawl_done = false
 end
 
 function update_intro_anim()
  if frame < splash_duration then
   return
  end
- for vertex in all(xwing_logo.vertices) do
-  local v = {(8-vertex[1])*0.25, (1.5-vertex[2])*0.25, 0}
-  v = rotate_y(v[1], v[2], v[3], frame*0.01)
-  v[3] += xwing_logo.z
-  vertex.prj = projectv(v)
+ if crawl.pos < 85 then
+  crawl.pos = flr((frame-splash_duration) * 0.35) - 90
+ else
+  intro_crawl_done = true
+  for vertex in all(logo.vertices) do
+   local v = {(8-vertex[1])*0.25, (1.5-vertex[2])*0.25, 0}
+   v = rotate_y(v[1], v[2], v[3], frame*0.01)
+   v[3] += logo.z
+   vertex.prj = projectv(v)
+  end
+  if logo.z > 0 then
+   logo.z -= 0.5
+  else
+   update_starfield()
+  end
  end
- if xwing_logo.z > 0 then
-  xwing_logo.z -= 0.5
+end
+
+function init_crawl()
+ -- texture
+ crawl.texture_width = 21*4
+ crawl.texture_height = #crawl.text*7
+ crawl.texture = {}
+ for str in all(crawl.text) do
+  for y=0,6 do
+   for idx=1,#str do
+    local chr = sub(str, idx, idx)
+    local metrics = crawl.font_metrics[chr]
+    for x=0,3 do
+     local col = sget(metrics[1]+x, crawl.font_base+metrics[2]+y)
+     add(crawl.texture, col)
+    end
+   end
+  end
+ end
+ -- tables
+ local final_width = 64
+ local dy = (148-final_width)/crawl.height
+ for y=0,crawl.height-1 do
+  crawl.line_widths[y] = final_width+y*dy*1.5
  end
 end
 
@@ -1366,31 +1456,60 @@ function draw_intro()
  else
   draw_starfield()
 
-  draw_xwing_logo()
+  if intro_crawl_done then
+   draw_logo()
+   if logo.z <= 0 then
+    if not intro_tune_played then
+     sfx(32)
+     intro_tune_played = true
+    end
 
-  if xwing_logo.z <= 0 then
-   if not intro_tune_played then
-    sfx(32)
-    intro_tune_played = true
+    printc("pico squadron", 81, 4)
+    printc("pico squadron", 80, 10)
+
+    printc("press fire to start", 100, frame/2)
    end
-
-   printc("pico squadron", 81, 4)
-   printc("pico squadron", 80, 10)
-
-   printc("press fire to start", 100, frame/2)
+  else
+   draw_crawl()
   end
  end
 end
 
-function draw_xwing_logo(col)
- for idx, l in pairs(xwing_logo.lines) do
-  local p1 = xwing_logo.vertices[l[1]].prj
-  local p2 = xwing_logo.vertices[l[2]].prj
+function draw_logo(col)
+ for idx, l in pairs(logo.lines) do
+  local p1 = logo.vertices[l[1]].prj
+  local p2 = logo.vertices[l[2]].prj
   local col = 10
   if idx > 18 then
    col = 9
   end
   line(p1.x, p1.y, p2.x, p2.y, col)
+ end
+end
+
+function draw_crawl()
+ local palette = {1, 5, 9, 10}
+ for y=0,crawl.height-1 do
+  local width = crawl.line_widths[y]
+  local texy = flr(crawl.pos+y*0.75)
+  if texy >= 0 and texy < #crawl.text*7 then
+   local col = palette[min(1+flr(y/8), #palette)]
+   draw_crawl_line(128-crawl.height+y, texy, width, col)
+  end
+ end
+end
+
+function draw_crawl_line(scry, texty, width, col)
+ local offset = 1 + texty*crawl.texture_width
+ local dx = crawl.texture_width/width
+ local scrx = 64-width/2
+ for i=1,width do
+  local texel = crawl.texture[flr(offset)]
+  if texel != 0 then
+   pset(scrx, scry, col)
+  end
+  offset += dx
+  scrx += 1
  end
 end
 
@@ -1403,6 +1522,7 @@ function start_intro()
  frame = 0
 
  init_starfield()
+ init_crawl()
  init_intro()
 
  set_callbacks(update_intro, draw_intro)
@@ -1410,7 +1530,6 @@ end
 
 function update_intro()
 
- update_starfield()
  update_intro_anim()
 
  if btnp(4) then
@@ -1508,11 +1627,11 @@ dcd000000aa000000000000000540000000000000000000000000000000000000000000000000000
 000000000aa000a00000000000540000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000aa00a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000aaa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+77707770077077007770777007707070777077707070700077707700077077700700777007707770707070707070707070707770000000000700070000000000
+70707070700070707000700070007070070007007070700077707070707070707070707070000700707070707070707070700070000000000700700000000000
+77707700700070707700770070707770070007007700700070707070707077707070770077700700707070707070070077700700000000000700000000000000
+70707070700070707000700070707070070007007070700070707070707070007700707000700700707077707770707000707000000000000000000000700000
+70707770077077707770700077707070777077007070777070707070770070000770707077000700077007007770707077707770000070000700000007000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
