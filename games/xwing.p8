@@ -1468,6 +1468,8 @@ function draw_intro()
     printc("pico squadron", 80, 10)
 
     printc("press fire to start", 100, frame/2)
+
+    printc("by @xavierdefrang", 122, 5)
    end
   else
    draw_crawl()
