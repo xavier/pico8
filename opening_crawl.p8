@@ -4,7 +4,6 @@ __lua__
 
 
 crawl = {
- pos = 0,
  text = {
   " the rebel alliance  ",
   "  is under attack!   ",
@@ -13,14 +12,8 @@ crawl = {
   "emperor's most elite ",
   "troops, a small team ",
   "of fierce pilots must",
-  "must run the massive ",
-  "blockade to reach the",
-  "safe rebel outpost in",
-  "the unknown regions. ",
-  "                     ",
-  "  the future of the  ",
-  "  galaxy is in your  ",
-  "  hands...           ",
+  "escape from a massive",
+  "blockade...          ",
   "                     ",
   "      scramble,      ",
   "    pico squadron!   "
@@ -58,10 +51,14 @@ crawl = {
   ["!"] = {112, 0},
   ["'"] = {116, 0},
   [","] = {120, 0},
- }
+ },
+ height=120,
+ line_widths = {},
 }
 
 local texture_width = 21*4
+local texture_height = #crawl.text*7
+
 
 -- scroller
 
@@ -88,10 +85,10 @@ function gen_texture()
   for y=0,6 do
    for idx=1,#str do
     local chr = sub(str, idx, idx)
-    printh(chr)
     local metrics = crawl.font_metrics[chr]
     for x=0,3 do
-     add(crawl.texture, sget(metrics[1]+x, crawl.font_base+metrics[2]+y))
+     local col = sget(metrics[1]+x, crawl.font_base+metrics[2]+y)
+     add(crawl.texture, col)
     end
    end
   end
@@ -103,27 +100,28 @@ end
 function _init()
  frame = 0
  gen_texture()
+ local final_width = 64
+ local dy = (148-final_width)/crawl.height
+ for y=0,crawl.height-1 do
+  crawl.line_widths[y] = final_width+y*dy*1.5
+ end
 end
 
 function _update()
  frame += 1
 end
 
+
 function _draw()
  cls()
-
  local palette = {1, 5, 9, 10}
-
- local height = 80
- local textpos = flr(frame * 0.4) - 80
-
- for y=0,height-1 do
-  local texy = y+textpos
-
-  local width = 40 + 2.42*y
-
+ local textpos = flr(frame * 0.35) - crawl.height - 10
+ for y=0,crawl.height-1 do
+  local width = crawl.line_widths[y]
+  local texy = flr(textpos+y*0.75)
   if texy >= 0 and texy < #crawl.text*7 then
-   draw_line(128-height+y, texy, width, palette[min(1+flr(y/4), #palette)])
+   local col = palette[min(1+flr(y/8), #palette)]
+   draw_line(128-crawl.height+y, texy, width, col)
   end
  end
 end
