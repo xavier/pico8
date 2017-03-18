@@ -1406,6 +1406,9 @@ function update_intro_anim()
   crawl.pos = flr((frame-splash_duration) * 0.35) - 90
  else
   intro_crawl_done = true
+
+  update_starfield()
+
   for vertex in all(logo.vertices) do
    local v = {(8-vertex[1])*0.25, (1.5-vertex[2])*0.25, 0}
    v = rotate_y(v[1], v[2], v[3], frame*0.01)
@@ -1414,8 +1417,6 @@ function update_intro_anim()
   end
   if logo.z > 0 then
    logo.z -= 0.5
-  else
-   update_starfield()
   end
  end
 end
