@@ -1485,7 +1485,7 @@ function draw_intro()
 
     printc("press fire to start", 100, frame/2)
 
-    printc("by @xavierdefrang / v1", 122, 1)
+    printc("by @xavierdefrang / v2", 122, 1)
    end
   else
    draw_crawl()
