@@ -2,9 +2,6 @@ pico-8 cartridge // http://www.pico-8.com
 version 8
 __lua__
 
--- todo:
--- * tie ai
-
 -- entities
 
 xwing = {}
@@ -576,9 +573,21 @@ function update_ties()
    tie.pos[3] -= tie.vel
    tie.roll += tie.angvel
 
+   local dx = scene_cam[1]-tie.pos[1]
+   local dy = scene_cam[2]-tie.pos[2]
+
+   if tie.aggr < 30 then
+    -- aggressive ties zero-in on the player
+    if abs(dx) > 5 or abs(dy) > 5 then
+     local dir = normv({dx, dy, 0})
+     tie.pos[1] += tie.vel*dir[1]
+     tie.pos[2] += tie.vel*dir[2]
+    end
+   end
+
    if tie.pos[3] < 0 then
     -- fly by player
-    if abs(tie.pos[1]-scene_cam[1]) < 2 and abs(tie.pos[2]-scene_cam[2]) < 2 and not xwing.destroyed then
+    if abs(dx) < 2 and abs(dy) < 2 and not xwing.destroyed then
      -- colision with tie
      take_hit(0.2)
     end
