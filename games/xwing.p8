@@ -4,7 +4,6 @@ __lua__
 
 -- todo:
 -- * contraint player movement
--- * save y-axis settings
 -- * tie ai
 
 -- entities
@@ -1614,7 +1613,16 @@ end
 
 -- main
 
-menuitem(1, "invert y-axis", function() settings.yaxis = -settings.yaxis end)
+cartdata("xavier_xwing_pico_squadron_1")
+
+if dget(0) != 0 then
+ settings.yaxis = dget(0)
+end
+
+menuitem(1, "invert y-axis", function()
+ settings.yaxis = -settings.yaxis
+ dset(0, settings.yaxis)
+end)
 
 start_intro()
 
