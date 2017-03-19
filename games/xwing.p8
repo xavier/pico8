@@ -3,7 +3,6 @@ version 8
 __lua__
 
 -- todo:
--- * contraint player movement
 -- * tie ai
 
 -- entities
@@ -1102,6 +1101,9 @@ function update_xwing()
   xwing.vel_y = min(xwing.vel_y+xwing.acc_y, 2) * 0.95
   scene_cam[1] += xwing.vel_x
   scene_cam[2] += xwing.vel_y
+  local bounds = 40
+  if abs(scene_cam[1]) > bounds then scene_cam[1] = bounds*sgn(scene_cam[1]) end
+  if abs(scene_cam[2]) > bounds then scene_cam[2] = bounds*sgn(scene_cam[2]) end
   -- autorepair
   local laser_repair = 0.005
   if xwing.lasers_level < 0.1 then
