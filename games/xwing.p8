@@ -179,6 +179,7 @@ lasers_pool_size  = 256
 
 function init_lasers()
  lasers_pool = {}
+ lasers_pool_index = 0
 end
 
 function fire_laser()
