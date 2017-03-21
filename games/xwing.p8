@@ -430,10 +430,13 @@ function random_tie(depth)
  local int = false
 
  local spread = 10
- if xwing.level > 1 then
+ if xwing.level > 1 or xwing.destroyed then
   spread = 20
   int = r < min(xwing.level*1.5, 6)
  end
+
+ if xwing.destroyed then
+  spread *= 2 -- on game over sreen
  end
 
  local pos  = {rndsign(rnd(spread)), rndsign(rnd(spread)), depth}
