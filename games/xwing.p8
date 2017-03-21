@@ -427,10 +427,13 @@ end
 
 function random_tie(depth)
  local r = rnd(10)
+ local int = false
 
  local spread = 10
  if xwing.level > 1 then
   spread = 20
+  int = r < min(xwing.level*1.5, 6)
+ end
  end
 
  local pos  = {rndsign(rnd(spread)), rndsign(rnd(spread)), depth}
@@ -445,7 +448,16 @@ function random_tie(depth)
   angvel = rndsign(rnd(10)/1000)
  end
 
- return {pos=pos, vel=vel, roll=roll, angvel=angvel, aggr=aggr, destseq=60, destseed=nil}
+ if int then
+  vel *= 2
+  angvel *= 1.2
+  zclip = 3
+ else
+  zclip = 0
+ end
+
+
+ return {pos=pos, vel=vel, roll=roll, angvel=angvel, aggr=aggr, destseq=60, destseed=nil, int=int, zclip=zclip}
 end
 
 
@@ -455,6 +467,8 @@ function draw_tie(tie, roll)
  local col_hull     = 5
  local col_wing     = 6
  local col_viewport = 13 --6
+
+ if tie.int then axle = 1.5 end
 
  local la1 = addv(rotate_z(-radius, 0, 0, roll), tie.pos)
  local la2 = addv(rotate_z(-radius-axle, 0, 0, roll), tie.pos)
@@ -484,9 +498,7 @@ function draw_tie(tie, roll)
    col_wing = 5
   end
 
-  draw_tie_wing(subv(la2, blast), lspin, col_hull, col_wing)
-  draw_tie_wing(addv(ra2, blast), rspin, col_hull, col_wing)
-
+  draw_tie_wings(tie, subv(la2, blast), addv(ra2, blast), lspin, rspin, col_hull, col_wing)
  else
   -- cockpit
   local cockpit_pos = projectv(tie.pos)
@@ -499,8 +511,7 @@ function draw_tie(tie, roll)
   line(pra1.x, pra1.y, pra2.x, pra2.y, col_hull)
 
   -- wings
-  draw_tie_wing(la2, roll, col_hull, col_wing)
-  draw_tie_wing(ra2, roll, col_hull, col_wing)
+  draw_tie_wings(tie, la2, ra2, roll, roll, col_hull, col_wing)
  end
 end
 
@@ -526,6 +537,16 @@ function draw_tie_viewport(cx, cy, outer_radius, roll, col)
   line(ox1, oy1, ix1, iy1, col)
   ox1, oy1 = ox2, oy2
   ix1, iy1 = ix2, iy2
+ end
+end
+
+function draw_tie_wings(tie, lpos, rpos, lroll, rroll, col_hull, col_wing)
+ if tie.int then
+  draw_tieint_wing(lpos, lroll, col_hull, col_wing)
+  draw_tieint_wing(rpos, rroll, col_hull, col_wing, true)
+ else
+  draw_tie_wing(lpos, lroll, col_hull, col_wing)
+  draw_tie_wing(rpos, rroll, col_hull, col_wing)
  end
 end
 
@@ -556,6 +577,60 @@ function draw_tie_wing(pos, roll, col_hull, col_wing)
  line(points[5].x, points[5].y, points[6].x, points[6].y, col_hull)
  line(points[6].x, points[6].y, points[7].x, points[7].y, col_hull)
  line(points[7].x, points[7].y, points[2].x, points[2].y, col_hull)
+end
+
+function draw_tieint_wing(pos, roll, col_hull, col_wing, flip_x)
+ local wing_vertices = {
+  -- top axle
+  {0, 1, 0},
+  -- top tip
+  {0, 1, -3},
+  -- top front
+  {1, 2, 0},
+  -- top back
+  {1, 2, 1},
+  -- top mid back
+  {0, 1, 1},
+  -- bottom mid back
+  {0, -1, 1},
+  -- bottom back
+  {1, -2, 1},
+  -- bottom front
+  {1, -2, 0},
+  -- bottom tip
+  {0, -1, -3},
+  -- bottom axle
+  {0, -1, 0}
+ }
+ local wing_lines = {
+  {1, 3, col_wing},
+  {1, 5, col_wing},
+  {6, 10, col_wing},
+  {8, 10, col_wing},
+  {1, 2, col_hull},
+  {2, 3, col_hull},
+  {3, 4, col_hull},
+  {4, 5, col_hull},
+  {5, 6, col_hull},
+  {6, 7, col_hull},
+  {7, 8, col_hull},
+  {8, 9, col_hull},
+  {9, 10, col_hull},
+  {10, 1, col_hull}
+ }
+
+ local points = {}
+ local xs = 1
+ if flip_x then xs = -xs end
+ for v in all(wing_vertices) do
+  add(points, projectv(addv(rotate_z(v[1]*xs, v[2], v[3], roll), pos)))
+ end
+
+ for lc in all(wing_lines) do
+  local p1 = points[lc[1]]
+  local p2 = points[lc[2]]
+  line(p1.x, p1.y, p2.x, p2.y, lc[3])
+ end
 
 end
 
@@ -586,7 +661,7 @@ function update_ties()
     end
    end
 
-   if tie.pos[3] < 0 then
+   if tie.pos[3] < tie.zclip then
     -- fly by player
     if abs(dx) < 2 and abs(dy) < 2 and not xwing.destroyed then
      -- colision with tie
