@@ -996,11 +996,7 @@ function draw_meters()
  print("s", 0, 1, 7)
  draw_meter(5, xwing.shields_level, 3, 11)
 
- local str = ""..xwing.score
- while #str < 6 do
-  str = "0"..str
- end
- print(str, 64 - 6*2, 1, 7)
+ draw_score()
 
  draw_meter(91, xwing.lasers_level, 9, 10)
  print("l", 124, 1, 7)
@@ -1010,6 +1006,14 @@ function draw_meters()
   spr(16, x, 8)
   x += 4
  end
+end
+
+function draw_score()
+ local str = ""..xwing.score
+ while #str < 6 do
+  str = "0"..str
+ end
+ print(str, 64 - 6*2, 1, 7)
 end
 
 function draw_meter(x, level, col, peakcol)
@@ -1597,7 +1601,8 @@ function draw_game()
  if xwing.destroyed then
   -- gameover screen
   draw_damages()
-  printc("game over", 32, 12+(flr(frame / 4) % 2))
+  draw_score()
+  printc("game over", 38, 12+(flr(frame / 4) % 2))
   if xwing.gameover_delay == 0 then
    printc("press fire to continue", 100, frame / 2)
   end
