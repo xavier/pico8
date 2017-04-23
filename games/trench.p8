@@ -18,6 +18,15 @@ function reset_scene_cam()
  scene_cam[2] = 0
 end
 
+function rotate_x(x, y, z, angle)
+ local co, si = cos(angle), sin(angle)
+ return {
+  x,
+  y*co - z*si,
+  y*si + z*co
+ }
+end
+
 function rotate_y(x, y, z, angle)
  local co, si = cos(angle), sin(angle)
  return {
@@ -34,6 +43,14 @@ function rotate_z(x, y, z, angle)
   x*si + y*co,
   z
  }
+end
+
+function rotatev_x(v, angle)
+ return rotate_x(v[1], v[2], v[3], angle)
+end
+
+function rotatev_y(v, angle)
+ return rotate_y(v[1], v[2], v[3], angle)
 end
 
 function rotatev_z(v, angle)
@@ -96,7 +113,7 @@ end
 trench = {
  scale = {10, 10, 150},
  outline = {
-  col = 6,
+  col = 7,
   vertices = {
    {-1,  1, 1},
    { 1,  1, 1},
@@ -217,7 +234,7 @@ function update_xwing()
 end
 
 function bank(angle)
- xwing.roll = mid(-0.05, xwing.roll + angle, 0.05)
+ xwing.roll = mid(-0.025, xwing.roll + angle, 0.025)
 end
 
 function unbank(angle)
@@ -243,11 +260,11 @@ function handle_input()
   if btn(0) then -- left
    xwing.acc_x = -acc
    xwing.shake_x = -2
-   bank(0.005)
+   bank(0.004)
   elseif btn(1) then -- right
    xwing.acc_x = acc
    xwing.shake_x = 2
-   bank(-0.005)
+   bank(-0.004)
   else
    xwing.acc_x = 0
    xwing.shake_x = 0
@@ -266,10 +283,10 @@ function handle_input()
   end
 
   if btnp(4) then
-   if xwing.lasers_level > 0.1 then
-    fire_laser()
-    sfx(0)
-   end
+   -- if xwing.lasers_level > 0.1 then
+   --  fire_laser()
+   --  sfx(0)
+   -- end
   end
 
  end
@@ -297,25 +314,102 @@ function draw_debug()
  print("mem"..stat(0), 0, 78, col)
 end
 
--- main state management
+-- main state: intro
 
 function start_intro()
  reset_scene_cam()
 
  frame = 0
 
+ init_intro()
  set_callbacks(update_intro, draw_intro)
 end
 
-function update_intro()
+deathstar = {}
 
+function init_intro()
+ local n, s = 3, 1.5
+ deathstar.dots = {}
+ deathstar.equator = {}
+ deathstar.dish = {}
+
+ -- dots
+ for y=-n,n do
+  for x=-n,n do
+   for z=-n,n do
+    local r = sqrt(x*x + y*y + z*z) / s
+    if r != 0 then
+     if y != 0 then
+      add(deathstar.dots, {x / r, y / r, z / r})
+     end
+    end
+   end
+  end
+ end
+
+ -- equator
+ local radius,phase = 1.5,-0.2
+ for a=0,0.9,0.01 do
+  add(deathstar.equator, {cos(a+phase)*radius, 0, sin(a+phase)*radius})
+ end
+
+ -- dish
+ local outr, inr = 0.4, 0.3
+ local outz, inz = 1.5, 1.35
+ for a=0,0.9,0.1 do
+  local x = cos(a)
+  local y = sin(a)
+  add(deathstar.dish, {x*outr, y*outr, outz})
+  add(deathstar.dish, {x*inr,  y*inr,  inz})
+ end
+
+end
+
+function update_intro()
  if btnp(4) or btnp(5) then
   sfx(10)
   --sfx(33) -- music?
   start_game()
  end
-
 end
+
+function draw_intro()
+ cls()
+
+ rotate = function(vert, angle)
+  return rotatev_y(rotatev_x(vert, 0.01), angle)
+ end
+
+ local angle = -frame * 0.003
+ for vert in all(deathstar.dots) do
+  local p = projectv(rotate(vert, angle))
+  pset(p.x, p.y, 7)
+ end
+
+ local equator_points = {}
+ for idx, vert in pairs(deathstar.equator) do
+  local p = projectv(rotate(vert, angle))
+  add(equator_points, p)
+  pset(p.x, p.y, 7)
+ end
+
+ for idx=1,#equator_points-1 do
+  local p1 = equator_points[idx]
+  local p2 = equator_points[idx+1]
+  line(p1.x, p1.y, p2.x, p2.y, 7)
+ end
+
+ for idx=1,#deathstar.dish,2 do
+  local p1 = projectv(rotate(deathstar.dish[idx], angle))
+  local p2 = projectv(rotate(deathstar.dish[idx+1], angle))
+  line(p1.x, p1.y, p2.x, p2.y, 7)
+ end
+
+ --printc("* trench run simulator *", 3, )
+ printc("* press fire *", 120, 12 + (frame / 7) % 2)
+end
+
+-- main state: game
 
 function start_game()
  init_trench()
