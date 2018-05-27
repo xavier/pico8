@@ -248,9 +248,16 @@ function generate_cylinder_mesh(nv, nh, s)
 
  for i=0,(nv-1) do
   local y = (0.5-i*(1/nv)) * s[2]
+  if false and (i == 0 or i == (nv-1)) then
+   sx = 0.5
+   sz = 0.5
+  else
+   sx = s[1]
+   sz = s[3]
+  end
   for j=0,(nh-1) do
    local a = j * (1/nh)
-   add(mesh.vertices, {cos(a)*s[1], y, sin(a)*s[3]})
+   add(mesh.vertices, {cos(a)*sx, y, sin(a)*sz})
    add(mesh.points, {x=0, y=0})
   end
  end
@@ -481,7 +488,7 @@ function _init()
   local warp = {
    1+.5*wavelet,
    1+0.25*wavelet,
-   1+.5*wavelet
+   1+.2*wavelet
   }
   return addv(
    rotatev_z(
