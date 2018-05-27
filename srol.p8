@@ -144,7 +144,7 @@ function new_mesh()
   vertices = {},
   points = {},
   edges = {},
-  vertex_transform = xform_identity
+  vertex_transform = vertex_transform_identity
  }
 end
 
@@ -223,11 +223,36 @@ function generate_lhc_mesh(irad, orad, depth)
  return mesh
 end
 
-function xform_identity(t, _i, v)
+function generate_cylinder_mesh(nv, nh, s)
+ local mesh = new_mesh()
+
+ for i=0,(nv-1) do
+  local y = (0.5-i*(1/nv)) * s[2]
+  for j=0,(nh-1) do
+   local a = j * (1/nh)
+   add(mesh.vertices, {cos(a)*s[1], y, sin(a)*s[3]})
+   add(mesh.points, {x=0, y=0})
+  end
+ end
+
+ for i=1,nv do
+  for j=1,nh do
+  local offset = (i-1) * nh
+   add(mesh.edges, {offset+j, offset+(j%nh)+1})
+   if (i > 1) then
+    add(mesh.edges, {offset+j-nh, offset+j})
+   end
+  end
+ end
+
+ return mesh
+end
+
+function vertex_transform_identity(t, _i, v)
  return v
 end
 
-function xform_wave(t, i, v)
+function vertex_transform_wave(t, i, v)
  local x = 3.5 - (i % 7)
  local y = 3.5 - (i / 7)
  local z = cos(x*0.5+t) * sin(y*0.5+t) -- * 0.005
@@ -246,7 +271,6 @@ function render_mesh(mesh, curpal)
   for edge in all(mesh.edges) do
    local p1 = mesh.points[edge[1]]
    local p2 = mesh.points[edge[2]]
-   --line(p1.x+1, p1.y+1, p2.x+1, p2.y+1, 0)
    line(p1.x, p1.y, p2.x, p2.y, curpal.fg)
   end
  end
@@ -316,12 +340,22 @@ function part_wave_draw()
  render_mesh(wave_mesh, mypal)
 end
 
+function part_cylinder_update(t)
+ transform_mesh(cylinder_mesh, t)
+end
+
+function part_cylinder_draw()
+ local mypal = palettes.red
+ dithered_background(mypal.bg)
+ render_mesh(cylinder_mesh, mypal)
+end
+
 function part_lhc_update(t)
  transform_mesh(lhc_mesh, t)
 end
 
 function part_lhc_draw()
- local mypal = palettes.red
+ local mypal = palettes.green
  dithered_background(mypal.bg)
  render_mesh(lhc_mesh, mypal)
 end
@@ -364,6 +398,7 @@ function part_credits_draw()
 end
 
 parts = {
+ {part_cylinder_update, part_cylinder_draw},
  {part_wave_update, part_wave_draw},
  {part_lhc_update, part_lhc_draw},
  {part_trench_update, part_trench_draw},
@@ -379,11 +414,35 @@ function _init()
  part_index = 1
 
  wave_mesh = generate_plane_mesh(7, 0.3)
- wave_mesh.vertex_transform = xform_wave
+ wave_mesh.vertex_transform = vertex_transform_wave
 
  lhc_mesh = generate_lhc_mesh(1.5, 3, 1)
  lhc_mesh.vertex_transform = function (t, i, v)
   return addv(rotatev_y(v, t*0.5), {0, 0, 5})
+ end
+
+ local nh = 12
+ local nv = 9
+ cylinder_mesh = generate_cylinder_mesh(nv, nh, {2.5, 7, 2.5})
+ cylinder_mesh.vertex_transform = function (t, i, v)
+  local wave = sin(t*0.5)
+  local y = (i/nh)
+  local wavelet = cos(t*0.8+(y/nv)*2)
+  local warp = {
+   1+.5*wavelet,
+   1+0.25*wavelet,
+   1+.5*wavelet
+  }
+  return addv(
+   rotatev_z(
+    rotatev_y(
+     scalev(v, warp),
+     t*0.1
+    ),
+    0.03 * sin(t*0.2)
+   ),
+   {0, 0, 5}
+  )
  end
 
  trench_mesh = generate_plane_mesh(12, 0.2)
