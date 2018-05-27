@@ -21,6 +21,23 @@ dithering_masks = {
  0b0000001000001010,
  0b0000001000001000,
  0b0000000000000000,
+ -- mirror
+ 0b0000000000000000,
+ 0b0000001000001000,
+ 0b0000001000001010,
+ 0b0000101000001010,
+ 0b0000101001001010,
+ 0b0001101001001010,
+ 0b0001101001011010,
+ 0b0101101001011010,
+ 0b0101101001011110,
+ 0b0101101101011110,
+ 0b0101101101011111,
+ 0b0101111101011111,
+ 0b0101111111011111,
+ 0b0111111111011111,
+ 0b0111111111111111,
+ 0b1111111111111111,
 }
 
 palettes = {
@@ -287,16 +304,17 @@ function flipcol(col)
  return bor(shl(band(col, 15), 4), shr(col, 4))
 end
 
-function dithered_background(col)
+function draw_dithered_background(col, timer)
  local loc = flipcol(col)
- local y = 0
- local d = 3
+ local d = 8
 
- for mask in all(dithering_masks) do
+ local idx = flr(timer + 100*sin(timer*0.025) + 50*sin(timer*0.05))
+
+ for y=0,(128-d),d do
+  local mask = dithering_masks[1+(idx%#dithering_masks)]
   fillp(mask)
   rectfill(0, y, 127, y+d, col)
-  rectfill(0, 127-y, 127, y-d, loc)
-  y += d
+  idx += 1
  end
 
  fillp(0)
@@ -336,7 +354,7 @@ end
 
 function part_wave_draw()
  local mypal = palettes.blue
- dithered_background(mypal.bg)
+ draw_dithered_background(mypal.bg, timer)
  render_mesh(wave_mesh, mypal)
 end
 
@@ -346,7 +364,7 @@ end
 
 function part_cylinder_draw()
  local mypal = palettes.red
- dithered_background(mypal.bg)
+ draw_dithered_background(mypal.bg, timer)
  render_mesh(cylinder_mesh, mypal)
 end
 
@@ -356,7 +374,7 @@ end
 
 function part_lhc_draw()
  local mypal = palettes.green
- dithered_background(mypal.bg)
+ draw_dithered_background(mypal.bg, timer)
  render_mesh(lhc_mesh, mypal)
 end
 
@@ -366,7 +384,7 @@ end
 
 function part_trench_draw()
  local mypal = palettes.green
- dithered_background(mypal.bg)
+ draw_dithered_background(mypal.bg, timer)
  render_mesh(trench_mesh, mypal)
 end
 
