@@ -70,6 +70,7 @@ palettes = {
 
 scene_cam = {0, 0, -2.5, 80}
 __debug_render_lines = true
+__debug_stats = false
 
 
 function rotate_x(x, y, z, angle)
@@ -518,7 +519,6 @@ end
 
 function _update()
  timer += 0.0333333
- printh("t="..timer.." pi="..part_index)
  parts[part_index][1](timer)
 
  if part_index > 1 and btnp(0) then
@@ -533,12 +533,15 @@ function _update()
   __debug_render_lines = not __debug_render_lines
  end
  if btnp(5) then
-  -- other flag ...
+  __debug_stats = not __debug_stats
  end
-
-
 end
 
 function _draw()
  parts[part_index][2]()
+ if __debug_stats then
+  local col = 10
+  print(""..timer, 0, 0, col)
+  print(""..stat(1), 0, 7, col)
+ end
 end
