@@ -280,10 +280,12 @@ function vertex_transform_identity(t, _i, v)
 end
 
 function vertex_transform_wave(t, i, v)
- local x = (3.5 - (i % 7)) * 0.5
- local y = (3.5 - (i / 7)) * 0.5
- local z = sin(x+t*0.5) * sin(y+t*0.5) * 0.5
- return rotatev_z(rotatev_x(rotatev_y({v[1], v[2], z}, t*0.1), -.1), 0)
+ i -= 1
+ local x = 4-((i % 8))
+ local y = 4-(((i / 8) % 8))
+ local d = sqrt(sqr(x)+sqr(y))
+ local z = .5/d * cos(t+d*.3)
+ return rotatev_x(rotatev_y({v[1], v[2], z}, 0.2*sin(t*.14)), 0.1*sin(t*.2))
 end
 
 
