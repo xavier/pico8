@@ -391,12 +391,48 @@ function part_trench_draw()
  render_mesh(trench_mesh, mypal)
 end
 
+credits_screen_index = 1
+
 function part_credits_update(t)
+ credits_screen_index = 1 + (flr(t*0.25) % #credits_screens)
 end
 
+credits_screens = {
+ {
+  "forever loving robot",
+  "",
+  "is the",
+  "human robot of love"
+
+ },
+ {
+  "unconditional love to",
+  "",
+  "dune",
+  "hoplite",
+  "der pippoo",
+  "",
+  "the robots in their teens"
+ },
+ {
+  "nooon",
+  "complex",
+  "melon",
+  "polka brothers"
+ },
+ {
+  "pico-8 demake",
+  "",
+  "by",
+  "@xavierdefrang",
+  "",
+  "2018 is the new 1995"
+ }
+}
+
 function part_credits_draw()
- local mypal = palettes.bw
- --pal(4, 0)
+
+ -- snow
  for y=0,63 do
   for x=0,63 do
    local col=5+rnd(3)
@@ -407,15 +443,8 @@ function part_credits_draw()
   end
  end
 
- centered_text_lines({
-  "unconditional love to",
-  "",
-  "dune",
-  "hoplite",
-  "der pippoo",
-  "",
-  "the robots in their teens"
- })
+ --
+ centered_text_lines(credits_screens[credits_screen_index])
 end
 
 parts = {
