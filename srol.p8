@@ -165,19 +165,22 @@ function new_mesh()
  }
 end
 
-function generate_plane_mesh(n, s)
+function zfun_zero(x, y)
+ return 0
+end
+
+function generate_plane_mesh(n, s, zfun)
  local mesh = new_mesh()
-
  local hn = n / 2
-
  local offset = 0
-
- for y=0,n do
-  for x=0,n do
-   local vertex = {(x-hn) * s, (y-hn) * s, 0}
+ for i=0,n do
+  local y = i-hn
+  for j=0,n do
+   local x = j-hn
+   local vertex = {x * s, y * s, zfun(x, y) * s}
    add(mesh.vertices, vertex)
    add(mesh.points, projectv(vertex))
-   if x > 0 and y < n then
+   if j > 0 and i < n then
     add(mesh.edges, {offset, offset+1})
     add(mesh.edges, {offset, offset+n+1})
     add(mesh.edges, {offset+1, offset+n+2})
@@ -270,10 +273,10 @@ function vertex_transform_identity(t, _i, v)
 end
 
 function vertex_transform_wave(t, i, v)
- local x = 3.5 - (i % 7)
- local y = 3.5 - (i / 7)
- local z = cos(x*0.5+t) * sin(y*0.5+t) -- * 0.005
- return {v[1], v[2], z}
+ local x = (3.5 - (i % 7)) * 0.5
+ local y = (3.5 - (i / 7)) * 0.5
+ local z = sin(x+t*0.5) * sin(y+t*0.5) * 0.5
+ return rotatev_z(rotatev_x(rotatev_y({v[1], v[2], z}, t*0.1), -.1), 0)
 end
 
 
@@ -431,7 +434,7 @@ function _init()
  timer = 0
  part_index = 1
 
- wave_mesh = generate_plane_mesh(7, 0.3)
+ wave_mesh = generate_plane_mesh(7, 0.3, zfun_zero)
  wave_mesh.vertex_transform = vertex_transform_wave
 
  lhc_mesh = generate_lhc_mesh(1.5, 3, 1)
@@ -463,7 +466,16 @@ function _init()
   )
  end
 
- trench_mesh = generate_plane_mesh(12, 0.2)
+
+ zfun_landscape = function(x, y)
+  return 5*sin(x*0.1)*sin(y*0.1)
+ end
+
+ trench_mesh = generate_plane_mesh(12, 0.2, zfun_landscape)
+ trench_mesh.vertex_transform = function (t, i, v)
+  return rotatev_y(rotatev_x(v, -0.15), t*0.1)
+ end
+
 end
 
 function _update()
