@@ -4,6 +4,12 @@ __lua__
 
 -- math
 
+
+function vec_add(v1, v2)
+ return {v1[1]+v2[1], v1[2]+v2[2], v1[3]+v2[3]}
+end
+
+
 function vec_sub(v1, v2)
  return {v1[1]-v2[1], v1[2]-v2[2], v1[3]-v2[3]}
 end
@@ -22,7 +28,7 @@ end
 
 function vec_normalize(v)
  local s = 1 / vec_magnitude(v)
- return {v[1] * s, v[2] * s, v[3] * s}
+ return {v[1]*s, v[2]*s, v[3]*s}
 end
 
 function vec_magnitude(v)
@@ -77,7 +83,7 @@ function mat_view(pos, lat, roll)
   v = {0, 1, 0}
  end
 
- u = normalize(vec_cross(p, v))
+ u = vec_normalize(vec_cross(p, v))
  v = vec_cross(p, v)
 
  local cz, sz = cos(z), sin(z)
@@ -97,138 +103,246 @@ function mat_scale(x, y, z)
  }
 end
 
+-- mesh generation
+
+-- http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
+function icosahedron()
+ local t = (1 + sqrt(5)) * .5;
+
+ ico = {}
+ ico.vertices = {
+  {pos={-1,  t,  0}},
+  {pos={ 1,  t,  0}},
+  {pos={-1, -t,  0}},
+  {pos={ 1, -t,  0}},
+  {pos={ 0, -1,  t}},
+  {pos={ 0,  1,  t}},
+  {pos={ 0, -1, -t}},
+  {pos={ 0,  1, -t}},
+  {pos={ t,  0, -1}},
+  {pos={ t,  0,  1}},
+  {pos={-t,  0, -1}},
+  {pos={-t,  0,  1}},
+ }
+ ico.faces = {
+  {vertices={0, 11, 5}},
+  {vertices={0, 5, 1}},
+  {vertices={0, 1, 7}},
+  {vertices={0, 7, 10}},
+  {vertices={0, 10, 11}},
+
+  {vertices={1, 5, 9}},
+  {vertices={5, 11, 4}},
+  {vertices={11, 10, 2}},
+  {vertices={10, 7, 6}},
+  {vertices={7, 1, 8}},
+
+  {vertices={3, 9, 4}},
+  {vertices={3, 4, 2}},
+  {vertices={3, 2, 6}},
+  {vertices={3, 6, 8}},
+  {vertices={3, 8, 9}},
+
+  {vertices={4, 9, 5}},
+  {vertices={2, 4, 11}},
+  {vertices={6, 2, 10}},
+  {vertices={8, 6, 7}},
+  {vertices={9, 8, 1}},
+ }
+
+ local palette = {12, 7, 8}
+
+ for idx, face in pairs(ico.faces) do
+  face.vertices[1] += 1
+  face.vertices[2] += 1
+  face.vertices[3] += 1
+  face.col = 8+rnd(6)
+ end
+
+ return ico
+
+end
+
+function torus(rings, sides, inner_radius, outer_radius)
+ local model = {}
+
+ model.vertices = {}
+ for u=0,rings-1 do
+  local rho = u / rings
+  for v=0,sides-1 do
+   local theta = v / sides
+   local x = (outer_radius + inner_radius * cos(theta)) * cos(rho)
+   local y = (outer_radius + inner_radius * cos(theta)) * sin(rho)
+   local z = inner_radius * sin(theta)
+   add(model.vertices, {pos={x, y, z}})
+  end
+ end
+
+ -- todo fix
+ model.faces = {}
+ for v=0,rings-1 do
+  local v1 = v+1
+  for u=0,sides-1 do
+   local u1 = u+1
+   local lt = u + v * (sides)
+   local rt = u1 + v * (sides)
+   local lb = u + v1 * (sides)
+   local rb = u1 + v1 * (sides)
+
+   add(model.faces, {vertices={lt+1, rt+1, lb+1}, col=7})
+   add(model.faces, {vertices={rt+1, rb+1, lb+1}, col=8})
+  end
+ end
+
+
+ return model
+end
+
 -- 3D engine
 
-model = {}
-model.vertices = {
- {0, 1, 0},
- {-1, -1, 1},
- {1, -1, 1},
- {-1, -1, -1},
- {1, -1, -1},
-}
-model.triangles = {
- {1, 2, 3, 2,  nil, nil},
- {1, 2, 4, 10, nil, nil},
- {1, 3, 5, 8,  nil, nil},
- {1, 4, 5, 12, nil, nil},
-}
+-- model = {}
+-- model.vertices = {
+--  {pos={0, 1, 0},   },
+--  {pos={-1, -1, 1}, },
+--  {pos={1, -1, 1},  },
+--  {pos={-1, -1, -1} },
+--  {pos={1, -1, -1}, },
+-- }
+-- model.faces = {
+--  {vertices={1, 2, 3}, col=2},
+--  {vertices={1, 2, 4}, col=10},
+--  {vertices={1, 3, 5}, col=8},
+--  {vertices={1, 4, 5}, col=12},
+-- }
+
+model = icosahedron()
+
+--model = torus(6, 5, 10, 20)
+
+model.pos = {0, 0, 0}
 
 scene = {}
-scene.camera = {0, 0, -2.5, 64}
+scene.camera = {
+ pos={0, 0, 10},
+ lat={0, 0, 0},
+ roll=0
+}
+scene.old_camera = {0, 0, -2.5, 64}
 
 function scene_init()
+ -- precalc face normals
+ for face in all(model.faces) do
+  local v1 = model.vertices[face.vertices[1]].pos
+  local v2 = model.vertices[face.vertices[2]].pos
+  local v3 = model.vertices[face.vertices[3]].pos
 
+  local p  = vec_sub(v1, v2)
+  local q  = vec_sub(v1, v3)
+  face.normal = vec_normalize(vec_cross(p, q))
+ end
 end
 
 function scene_update(frame)
- angle = frame * 0.01
- scale = 1 -- + 0.3*sin(frame * 0.02)
- scene_transform(0, angle, 0, scale, scale, scale)
+ angle = frame * 0.005
+ scale = 1 --+ 0.2*sin(frame * 0.05)
+ model_transform(frame, 0, angle, angle, 1, scale, 1)
 end
 
-function scene_transform(rx, ry, rz, sx, sy, sz)
- local rm = mat_rot(rx, ry, rz)
- local sm = mat_scale(sx, sy, sz)
- local tm = mat_mul(sm, rm)
+function model_transform(frame, rx, ry, rz, sx, sy, sz)
 
+ local view = mat_view(scene.camera.pos, scene.camera.lat, scene.camera.roll)
+ local rotation  = mat_rot(rx, ry, rz)
 
- local vertices, points = {}, {}
- for vertex in all(model.vertices) do
-  local v = vec_transform(vertex, tm)
-  add(vertices, v)
-  add(points, project(v, scene.camera))
+ local translation = vec_transform(vec_sub(model.pos, scene.camera.pos), view)
+
+ local cam_pos_inv = vec_transform(vec_sub(scene.camera.pos, model.pos), mat_transpose(rotation))
+
+ --local sm = mat_scale(sx, sy, sz)
+
+ local transformation = mat_mul(view, rotation)
+
+ for face in all(model.faces) do
+
+  local los = vec_sub(model.vertices[face.vertices[1]].pos, cam_pos_inv)
+  face.visible = vec_dot(los, face.normal) < 0
+
+  if face.visible then
+
+   for idx=1,3 do
+    local vertex = model.vertices[face.vertices[idx]]
+
+    if vertex.cnt != frame then
+     vertex.trn = vec_add(vec_transform(vertex.pos, transformation), translation)
+     local iz = 1/vertex.trn[3]
+     vertex.prj = {
+      x=64 + vertex.trn[1]*iz*128,
+      y=64 + vertex.trn[2]*iz*128,
+      z=iz
+     }
+     vertex.cnt = frame
+    end
+   end
+
+   local tv1 = model.vertices[face.vertices[1]].trn
+   local tv2 = model.vertices[face.vertices[2]].trn
+   local tv3 = model.vertices[face.vertices[3]].trn
+
+   face.depth = (tv1[3]+tv2[3]+tv3[3])/3
+  else
+   face.depth = 0
+  end
  end
- model.transformed_vertices = vertices
- model.points = points
+
 end
+
+faces_drawn = 0
 
 function scene_draw()
- -- face depth and normal calculation
- for triangle in all(model.triangles) do
-  local v1 = model.transformed_vertices[triangle[1]]
-  local v2 = model.transformed_vertices[triangle[2]]
-  local v3 = model.transformed_vertices[triangle[3]]
-  local p  = vec_sub(v1, v2)
-  local q  = vec_sub(v1, v3)
-  triangle[5] = min(v1[3], min(v2[3], v3[3]))
-  triangle[6] = vec_normalize(vec_cross(p, q))
- end
-
  -- painter's algorithm
- sort(model.triangles, function(t1, t2) return t1[5] < t2[5] end)
+ sort(model.faces, function(t1, t2) return t1.depth < t2.depth end)
 
  -- render
- for triangle in all(model.triangles) do
-  if vec_dot({0, 0, -1}, triangle[6]) < 0 then
-   local p1 = model.points[triangle[1]]
-   local p2 = model.points[triangle[2]]
-   local p3 = model.points[triangle[3]]
-   rasterize_triangle(p1, p2, p3, triangle[4])
+ faces_drawn = 0
+ for i=1,#model.faces do
+  local face = model.faces[i]
+  if face.visible then
+   local p1 = model.vertices[face.vertices[1]].prj
+   local p2 = model.vertices[face.vertices[2]].prj
+   local p3 = model.vertices[face.vertices[3]].prj
+   rasterize_triangle(p1, p2, p3, face.col)
    rasterize_mesh(p1, p2, p3, 7)
+   faces_drawn += 1
   end
  end
 end
 
 function rasterize_mesh(p1, p2, p3, col)
- line(p1[1], p1[2], p2[1], p2[2], col)
- line(p2[1], p2[2], p3[1], p3[2], col)
- line(p1[1], p1[2], p3[1], p3[2], col)
+ line(p1.x, p1.y, p2.x, p2.y, col)
+ line(p2.x, p2.y, p3.x, p3.y, col)
+ line(p1.x, p1.y, p3.x, p3.y, col)
 end
 
--- http://www-users.mat.uni.torun.pl/~wrona/3d_tutor/tri_fillers.html
 function rasterize_triangle(p1, p2, p3, col)
- -- sort
- if p1[2] > p2[2] then
-  p1, p2 = p2, p1
- end
- if p1[2] > p3[2] then
-  p1, p3 = p3, p1
- end
- if p2[2] > p3[2] then
-  p2, p3 = p3, p2
- end
+ if p1.y > p2.y then p1, p2 = p2, p1 end
+ if p1.y > p3.y then p1, p3 = p3, p1 end
+ if p2.y > p3.y then p2, p3 = p3, p2 end
 
- -- lerp
- local dy1 = (p2[2] - p1[2])
- local dy2 = (p3[2] - p1[2])
- local dy3 = (p3[2] - p2[2])
+ local dx1 = (p2.x-p1.x) / (p2.y-p1.y)
+ local dx2 = (p3.x-p2.x) / (p3.y-p2.y)
+ local dx3 = (p3.x-p1.x) / (p3.y-p1.y)
 
- local dx1, dx2, dx3 = 0, 0, 0
- if dy1 > 0 then
-  dx1 = (p2[1] - p1[1]) / dy1
- end
- if dy2 > 0 then
-  dx2 = (p3[1] - p1[1]) / dy2
- end
- if dy3 > 0 then
-  dx3 = (p3[1] - p2[1]) / dy3
- end
+ local x1, x2 = p1.x, p1.x
 
- local x1, x2 = p1[1], p1[1]
-
- if dx1 > dx2 then
-  for y=p1[2],p2[2] do
-   hline(x1, x2, y, col)
-   x1 += dx2
-   x2 += dx1
-  end
-  for y=p2[2],p3[2] do
-   hline(x1, x2, y, col)
-   x1 += dx2
-   x2 += dx3
-  end
- else
-  for y=p1[2],p2[2] do
-   hline(x1, x2, y, col)
-   x1 += dx1
-   x2 += dx2
-  end
-  for y=p2[2],p3[2] do
-   hline(x1, x2, y, col)
-   x1 += dx3
-   x2 += dx2
-  end
+ for y=p1.y,p2.y do
+  hline(x1, x2, y, col)
+  x1 += dx3
+  x2 += dx1
+ end
+ x2 = p2.x
+ for y=p2.y,p3.y do
+  hline(x1, x2, y, col)
+  x1 += dx3
+  x2 += dx2
  end
 
 end
@@ -242,7 +356,7 @@ function project(vertex, cam)
  local d = (vertex[3]-cam[3])
  local x = 64 + (vertex[1]-cam[1]) * mult / d
  local y = 64 - (vertex[2]-cam[2]) * mult / d
- return {x, y}
+ return {x=x, y=y}
 end
 
 
@@ -271,6 +385,9 @@ end
 function _draw()
  cls()
  scene_draw()
+ color(7)
+ print(frame)
+ print(faces_drawn)
 end
 
 __gfx__
