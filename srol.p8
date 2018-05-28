@@ -328,6 +328,16 @@ end
 
 -- helpers
 
+function sort(a, gtfun)
+ for i=1,#a do
+  local j = i
+  while j > 1 and gtfun(a[j-1], a[j]) do
+   a[j], a[j-1] = a[j-1], a[j]
+   j = j - 1
+  end
+ end
+end
+
 function flipcol(col)
  return bor(shl(band(col, 15), 4), shr(col, 4))
 end
@@ -356,7 +366,6 @@ function centered_text_lines(lines)
   y += 8
  end
 end
-
 
 function centered_text_line(text, y)
  local x = 64 - #text * 2
@@ -476,43 +485,57 @@ end
 function part_tunnel_update(t)
  tunnel_rings = {}
 
- local nrings = 9
+ local nrings = 12
  local ndots = 7
- local depth = -100
- local zoffset = (t * 15) % abs(depth)
+ local depth = -120
+ local xoffset = 10*cos(t*0.39)
+ local yoffset = 7*sin(t*0.27)
+ local zoffset = (t * 35) % abs(depth)
 
  for r=1,nrings do
   local ring = {}
-  local z = (depth / r) + zoffset
-  if z >= -20 then
-   z = depth
+  local z = ((r * (depth / nrings)) + zoffset)
+  if z > -5 then
+   z += depth
   end
   for i=1,ndots do
-   local a = (i/ndots)
-   local radius = 10 + 3*sin(t*.25+ring_seeds[r]*ring_seeds[i]*i)
-   local v={cos(a)*radius, sin(a)*radius, z}
+   local a = (i/ndots) + ring_seeds[r]*.01
+   local xradius = 15 + 3*sin(t+ring_seeds[r]+ring_seeds[i]*i)
+   local yradius = 15 + 2*sin(t+ring_seeds[r]+ring_seeds[i]*i)
+   local v = {
+    xoffset + cos(a)*xradius,
+    yoffset + sin(a)*yradius,
+    z
+   }
    add(ring, projectv(v))
   end
-  add(tunnel_rings, ring)
+  add(tunnel_rings, {z, ring})
  end
 end
 
 function part_tunnel_draw()
+
+ sort(tunnel_rings, function(a, b)
+  return a[1] > b[1]
+ end)
+
  local mypal = palettes.red
 
  draw_dithered_background(mypal.bg, timer)
 
  for i=1,#tunnel_rings-1 do
-  local ring = tunnel_rings[i]
+  local ring = tunnel_rings[i][2]
   for j=1,#ring do
    local p1 = ring[j]
    local p2 = ring[next_index(ring, j)]
-   local p3 = tunnel_rings[i+1][j]
+   local p3 = tunnel_rings[i+1][2][j]
    line(p1.x, p1.y, p2.x, p2.y, mypal.fg)
    line(p1.x, p1.y, p3.x, p3.y, mypal.fg)
    pset(p1.x, p1.y, 7)
   end
  end
+
+ centered_text_line("the sea robot of love", 118)
 end
 
 parts = {
