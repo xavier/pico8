@@ -155,6 +155,10 @@ function sample(ary)
  return ary[1 + rnd(#ary - 1)]
 end
 
+function next_index(ary, idx)
+ return (idx % #ary) + 1
+end
+
 -- 3d engine
 
 function new_mesh()
@@ -247,6 +251,12 @@ end
 function generate_cylinder_mesh(nv, nh, s)
  local mesh = new_mesh()
 
+ -- top and bottom
+ add(mesh.vertices, {0, s[2] * 0.5, 0})
+ add(mesh.vertices, {0, -s[2] * 0.5, 0})
+ add(mesh.points, {x=0, y=0})
+ add(mesh.points, {x=0, y=0})
+
  for i=0,(nv-1) do
   local y = (0.5-i*(1/nv)) * s[2]
   if false and (i == 0 or i == (nv-1)) then
@@ -265,10 +275,15 @@ function generate_cylinder_mesh(nv, nh, s)
 
  for i=1,nv do
   for j=1,nh do
-  local offset = (i-1) * nh
+   local offset = 2 + (i-1) * nh
    add(mesh.edges, {offset+j, offset+(j%nh)+1})
-   if (i > 1) then
+   if i == 1 then
+    add(mesh.edges, {offset+j, 1})
+   else
     add(mesh.edges, {offset+j-nh, offset+j})
+    if i == nv then
+     add(mesh.edges, {offset+j, 2})
+    end
    end
   end
  end
@@ -457,7 +472,65 @@ function part_credits_draw()
  centered_text_lines(credits_screens[credits_screen_index])
 end
 
+
+function part_tunnel_update(t)
+ tunnel_rings = {}
+
+ local nrings = 9
+ local ndots = 7
+ local depth = -100
+ local zoffset = (t * 15) % abs(depth)
+
+ for r=1,nrings do
+  local ring = {}
+  local z = (depth / r) + zoffset
+  if z >= -20 then
+   z = depth
+  end
+  for i=1,ndots do
+   local a = (i/ndots)
+   local radius = 10 + 3*sin(t*.25+ring_seeds[r]*ring_seeds[i]*i)
+   local v={cos(a)*radius, sin(a)*radius, z}
+   add(ring, projectv(v))
+  end
+  add(tunnel_rings, ring)
+ end
+end
+
+function part_tunnel_draw()
+ local mypal = palettes.red
+
+ draw_dithered_background(mypal.bg, timer)
+
+ for i=1,#tunnel_rings-1 do
+  local ring = tunnel_rings[i]
+  for j=1,#ring do
+   local p1 = ring[j]
+   local p2 = ring[next_index(ring, j)]
+   local p3 = tunnel_rings[i+1][j]
+   line(p1.x, p1.y, p2.x, p2.y, mypal.fg)
+   line(p1.x, p1.y, p3.x, p3.y, mypal.fg)
+   pset(p1.x, p1.y, 7)
+  end
+ end
+end
+
 parts = {
+ -- 1. rays
+ -- 2. red lhc circle
+ -- 3. red lhc tunnel
+ -- 4. red/green lhc tunnel
+ -- 5. green landscape flyby
+ -- 6. red cylinder
+ -- 6. blue shaded landscape
+ --    "hmmm / moving lightsource and shadow / woww"
+ -- 7. red tunnel
+ --   "the sea robot of love"
+ -- 8. blue wave
+ --    "float robot float / if thy degrade yourself / thy shall be upgrade / thy shall not make whores"
+ -- 9. tv swno credits
+ --    "forever loving robot / its the human robot of love / ... are of this great love"
+ {part_tunnel_update, part_tunnel_draw},
  {part_cylinder_update, part_cylinder_draw},
  {part_wave_update, part_wave_draw},
  {part_lhc_update, part_lhc_draw},
@@ -485,24 +558,33 @@ function _init()
  local nv = 9
  cylinder_mesh = generate_cylinder_mesh(nv, nh, {2.5, 7, 2.5})
  cylinder_mesh.vertex_transform = function (t, i, v)
-  local wave = sin(t*0.5)
-  local y = (i/nh)
-  local wavelet = cos(t*0.8+(y/nv)*2)
-  local warp = {
-   1+.5*wavelet,
-   1+0.25*wavelet,
-   1+.2*wavelet
-  }
+  local rv = nil
+  if i > 2 then
+   i -= 2
+   local wave = sin(t*0.5)
+   local y = (i/nh)
+   local wavelet = cos(t*0.8+(y/nv)*2)
+   local warp = {
+    1+.5*wavelet,
+    1+0.25*wavelet,
+    1+.2*wavelet
+   }
+   rv = scalev(v, warp)
+  else
+   -- top and bottom
+   rv = {v[1], v[2] + 1.5*sin(t+i*.7), v[3]}
+  end
+  -- final transform
   return addv(
-   rotatev_z(
-    rotatev_y(
-     scalev(v, warp),
-     t*0.1
+    rotatev_z(
+     rotatev_y(
+      rv,
+      t*0.1
+     ),
+     0.03 * sin(t*0.2)
     ),
-    0.03 * sin(t*0.2)
-   ),
-   {0, 0, 5}
-  )
+    {0, 0, 5}
+   )
  end
 
 
@@ -513,6 +595,11 @@ function _init()
  trench_mesh = generate_plane_mesh(12, 0.2, zfun_landscape)
  trench_mesh.vertex_transform = function (t, i, v)
   return rotatev_y(rotatev_x(v, -0.15), t*0.1)
+ end
+
+ ring_seeds = {}
+ for i=1,50 do
+  add(ring_seeds, rnd())
  end
 
 end
