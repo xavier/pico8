@@ -166,6 +166,8 @@ function new_mesh()
   vertices = {},
   points = {},
   edges = {},
+  position = {0, 0, 0},
+  rotation = {0, 0, 0},
   vertex_transform = vertex_transform_identity
  }
 end
@@ -301,13 +303,18 @@ function vertex_transform_wave(t, i, v)
  local y = 4-(((i / 8) % 8))
  local d = sqrt(sqr(x)+sqr(y))
  local z = .5/d * cos(t+d*.3)
- return rotatev_x(rotatev_y({v[1], v[2], z}, 0.2*sin(t*.14)), 0.1*sin(t*.2))
+ return {v[1], v[2], z}
 end
 
 
 function transform_mesh(mesh, timer)
  for idx = 1,#mesh.vertices do
-  mesh.points[idx] = projectv(mesh.vertex_transform(timer, idx, mesh.vertices[idx]))
+  local tv = mesh.vertex_transform(timer, idx, mesh.vertices[idx])
+  tv = rotatev_x(tv, mesh.rotation[1])
+  tv = rotatev_y(tv, mesh.rotation[2])
+  tv = rotatev_z(tv, mesh.rotation[3])
+  tv = addv(tv, mesh.position)
+  mesh.points[idx] = projectv(tv)
  end
 end
 
@@ -386,6 +393,8 @@ end
 -- parts
 
 function part_wave_update(t)
+ wave_mesh.rotation[1] = 0.2*sin(t*.14)
+ wave_mesh.rotation[2] = 0.1*sin(t*.2)
  transform_mesh(wave_mesh, t)
 end
 
@@ -396,6 +405,12 @@ function part_wave_draw()
 end
 
 function part_cylinder_update(t)
+ cylinder_mesh.rotation = {
+  0,
+  t*0.1,
+  0.03 * sin(t*0.2)
+ }
+ cylinder_mesh.position = {0, 0, 5}
  transform_mesh(cylinder_mesh, t)
 end
 
@@ -406,6 +421,8 @@ function part_cylinder_draw()
 end
 
 function part_lhc_update(t)
+ lhc_mesh.position = {0, 0, 5}
+ lhc_mesh.rotation[2] = t*0.5
  transform_mesh(lhc_mesh, t)
 end
 
@@ -416,6 +433,7 @@ function part_lhc_draw()
 end
 
 function part_trench_update(t)
+ trench_mesh.rotation = {-0.15, t*0.1, 0}
  transform_mesh(trench_mesh, t)
 end
 
@@ -574,9 +592,6 @@ function _init()
  wave_mesh.vertex_transform = vertex_transform_wave
 
  lhc_mesh = generate_lhc_mesh(1.5, 3, 1)
- lhc_mesh.vertex_transform = function (t, i, v)
-  return addv(rotatev_y(v, t*0.5), {0, 0, 5})
- end
 
  local nh = 12
  local nv = 9
@@ -593,22 +608,11 @@ function _init()
     1+0.25*wavelet,
     1+.2*wavelet
    }
-   rv = scalev(v, warp)
+   return scalev(v, warp)
   else
    -- top and bottom
-   rv = {v[1], v[2] + 1.5*sin(t+i*.7), v[3]}
+   return {v[1], v[2] + 1.5*sin(t+i*.7), v[3]}
   end
-  -- final transform
-  return addv(
-    rotatev_z(
-     rotatev_y(
-      rv,
-      t*0.1
-     ),
-     0.03 * sin(t*0.2)
-    ),
-    {0, 0, 5}
-   )
  end
 
 
@@ -617,9 +621,6 @@ function _init()
  end
 
  trench_mesh = generate_plane_mesh(12, 0.2, zfun_landscape)
- trench_mesh.vertex_transform = function (t, i, v)
-  return rotatev_y(rotatev_x(v, -0.15), t*0.1)
- end
 
  ring_seeds = {}
  for i=1,50 do
