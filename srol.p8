@@ -54,7 +54,7 @@ palettes = {
   fg = 0x09
  },
  red2 = {
-  bg = 0x08,
+  bg = 0x48,
   fg = 0x09
  },
  blue = {
@@ -486,11 +486,11 @@ function part_tunnel_update(t)
  tunnel_rings = {}
 
  local nrings = 12
- local ndots = 7
- local depth = -120
- local xoffset = 10*cos(t*0.39)
+ local ndots = 9
+ local depth = -200
+ local xoffset = 7*cos(t*0.39+sin(t*0.01))
  local yoffset = 7*sin(t*0.27)
- local zoffset = (t * 35) % abs(depth)
+ local zoffset = (t * 37) % abs(depth)
 
  for r=1,nrings do
   local ring = {}
@@ -499,9 +499,10 @@ function part_tunnel_update(t)
    z += depth
   end
   for i=1,ndots do
-   local a = (i/ndots) + ring_seeds[r]*.01
-   local xradius = 15 + 3*sin(t+ring_seeds[r]+ring_seeds[i]*i)
-   local yradius = 15 + 2*sin(t+ring_seeds[r]+ring_seeds[i]*i)
+   local warp_seed = ring_seeds[r]+ring_seeds[i] * i
+   local a = (i/ndots)
+   local xradius = 15 + 6*cos(t*0.35+warp_seed * (i % 2))
+   local yradius = 15 + 2.5*sin(t*0.25+warp_seed)
    local v = {
     xoffset + cos(a)*xradius,
     yoffset + sin(a)*yradius,
@@ -519,7 +520,7 @@ function part_tunnel_draw()
   return a[1] > b[1]
  end)
 
- local mypal = palettes.red
+ local mypal = palettes.red2
 
  draw_dithered_background(mypal.bg, timer)
 
