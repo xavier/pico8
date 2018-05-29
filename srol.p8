@@ -307,9 +307,9 @@ function vertex_transform_wave(t, i, v)
 end
 
 
-function transform_mesh(mesh, timer)
+function transform_mesh(mesh, t)
  for idx = 1,#mesh.vertices do
-  local tv = mesh.vertex_transform(timer, idx, mesh.vertices[idx])
+  local tv = mesh.vertex_transform(t, idx, mesh.vertices[idx])
   tv = rotatev_x(tv, mesh.rotation[1])
   tv = rotatev_y(tv, mesh.rotation[2])
   tv = rotatev_z(tv, mesh.rotation[3])
@@ -349,11 +349,11 @@ function flipcol(col)
  return bor(shl(band(col, 15), 4), shr(col, 4))
 end
 
-function draw_dithered_background(col, timer)
+function draw_dithered_background(col, t)
  local loc = flipcol(col)
  local d = 8
 
- local idx = flr(timer + 100*sin(timer*0.025) + 50*sin(timer*0.05))
+ local idx = flr(t + 100*sin(t*0.025) + 50*sin(t*0.05))
 
  for y=0,(128-d),d do
   local mask = dithering_masks[1+(idx%#dithering_masks)]
@@ -398,9 +398,9 @@ function part_wave_update(t)
  transform_mesh(wave_mesh, t)
 end
 
-function part_wave_draw()
+function part_wave_draw(t)
  local mypal = palettes.blue
- draw_dithered_background(mypal.bg, timer)
+ draw_dithered_background(mypal.bg, t)
  render_mesh(wave_mesh, mypal)
 end
 
@@ -414,9 +414,9 @@ function part_cylinder_update(t)
  transform_mesh(cylinder_mesh, t)
 end
 
-function part_cylinder_draw()
+function part_cylinder_draw(t)
  local mypal = palettes.red
- draw_dithered_background(mypal.bg, timer)
+ draw_dithered_background(mypal.bg, t)
  render_mesh(cylinder_mesh, mypal)
 end
 
@@ -426,21 +426,21 @@ function part_lhc_update(t)
  transform_mesh(lhc_mesh, t)
 end
 
-function part_lhc_draw()
+function part_lhc_draw(t)
  local mypal = palettes.green
- draw_dithered_background(mypal.bg, timer)
+ draw_dithered_background(mypal.bg, t)
  render_mesh(lhc_mesh, mypal)
 end
 
-function part_trench_update(t)
- trench_mesh.rotation = {-0.15, t*0.1, 0}
- transform_mesh(trench_mesh, t)
+function part_landscape_update(t)
+ landscape_mesh.rotation = {-0.15, t*0.1, 0}
+ transform_mesh(landscape_mesh, t)
 end
 
-function part_trench_draw()
+function part_landscape_draw(t)
  local mypal = palettes.green
- draw_dithered_background(mypal.bg, timer)
- render_mesh(trench_mesh, mypal)
+ draw_dithered_background(mypal.bg, t)
+ render_mesh(landscape_mesh, mypal)
 end
 
 credits_screen_index = 1
@@ -482,7 +482,7 @@ credits_screens = {
  }
 }
 
-function part_credits_draw()
+function part_credits_draw(t)
 
  -- snow
  for y=0,63 do
@@ -499,6 +499,68 @@ function part_credits_draw()
  centered_text_lines(credits_screens[credits_screen_index])
 end
 
+function part_trench_update(t)
+ trench_layers = {}
+
+ local nlayers = 10
+ local ndots = 13
+ local depth = -200
+ local width = 200
+ local xoffset = 0
+ local yoffset = 20 * sin(t*.3) sin(t*.2)
+ local yrot=sin(t*0.25) * 0.025
+ local zrot=sin(t*0.35) * sin(t*.1) * 0.05
+ local zoffset = (t * 47) % abs(depth)
+
+
+ for r=1,nlayers do
+  local layer = {}
+  local z = ((r * (depth / nlayers)) + zoffset)
+  if z > -15 then
+   z += depth
+  end
+  for i=1,ndots do
+   local x = ((i-1)/ndots)
+   local randomness = sqr(0.5-x) * ring_seeds[r] * y_param
+   local amplitude = 25
+   local v = {
+    xoffset + (width/2) - (x*width),
+    yoffset + 30 + amplitude * -cos(x) * randomness,
+    z
+   }
+   add(layer, projectv(rotatev_y(rotatev_z(v, zrot), yrot)))
+  end
+  add(trench_layers, {z, layer})
+ end
+end
+
+function part_trench_draw(t)
+ sort(trench_layers, function(a, b)
+  return a[1] > b[1]
+ end)
+
+ local mypal = palettes.green
+
+ draw_dithered_background(mypal.bg, t)
+
+
+ for i=1,#trench_layers-1 do
+  local layer = trench_layers[i][2]
+  for j=1,#layer do
+   local p1 = layer[j]
+   if j < #layer then
+    local p2 = layer[j+1]
+    line(p1.x, p1.y, p2.x, p2.y, mypal.fg)
+   end
+   local p3 = trench_layers[i+1][2][j]
+   line(p1.x, p1.y, p3.x, p3.y, mypal.fg)
+   pset(p1.x, p1.y, 7)
+  end
+ end
+
+end
+
+-- tunnel
 
 function part_tunnel_update(t)
  tunnel_rings = {}
@@ -508,7 +570,7 @@ function part_tunnel_update(t)
  local depth = -200
  local xoffset = 7*cos(t*0.39+sin(t*0.01))
  local yoffset = 7*sin(t*0.27)
- local zoffset = (t * 37) % abs(depth)
+ local zoffset = (t * 47) % abs(depth)
 
  for r=1,nrings do
   local ring = {}
@@ -532,7 +594,7 @@ function part_tunnel_update(t)
  end
 end
 
-function part_tunnel_draw()
+function part_tunnel_draw(t)
 
  sort(tunnel_rings, function(a, b)
   return a[1] > b[1]
@@ -540,7 +602,7 @@ function part_tunnel_draw()
 
  local mypal = palettes.red2
 
- draw_dithered_background(mypal.bg, timer)
+ draw_dithered_background(mypal.bg, t)
 
  for i=1,#tunnel_rings-1 do
   local ring = tunnel_rings[i][2]
@@ -562,7 +624,7 @@ parts = {
  -- 2. red lhc circle
  -- 3. red lhc tunnel
  -- 4. red/green lhc tunnel
- -- 5. green landscape flyby
+ -- 5. green trench flyby
  -- 6. red cylinder
  -- 6. blue shaded landscape
  --    "hmmm / moving lightsource and shadow / woww"
@@ -572,21 +634,29 @@ parts = {
  --    "float robot float / if thy degrade yourself / thy shall be upgrade / thy shall not make whores"
  -- 9. tv swno credits
  --    "forever loving robot / its the human robot of love / ... are of this great love"
+ {part_trench_update, part_trench_draw},
  {part_tunnel_update, part_tunnel_draw},
  {part_cylinder_update, part_cylinder_draw},
  {part_wave_update, part_wave_draw},
  {part_lhc_update, part_lhc_draw},
- {part_trench_update, part_trench_draw},
+ {part_landscape_update, part_landscape_draw},
  {part_credits_update, part_credits_draw},
 }
 
-part_index = 1
+part_index = 0
+
+y_param = 0
 
 -- main
 
 function _init()
+ srand(0x13378055)
+
  timer = 0
  part_index = 1
+
+ tunnel_rings = {}
+ trench_layers = {}
 
  wave_mesh = generate_plane_mesh(7, 0.3, zfun_zero)
  wave_mesh.vertex_transform = vertex_transform_wave
@@ -620,7 +690,7 @@ function _init()
   return 5*sin(x*0.1)*sin(y*0.1)
  end
 
- trench_mesh = generate_plane_mesh(12, 0.2, zfun_landscape)
+ landscape_mesh = generate_plane_mesh(12, 0.2, zfun_landscape)
 
  ring_seeds = {}
  for i=1,50 do
@@ -641,6 +711,13 @@ function _update()
   part_index += 1
  end
 
+ if btnp(2) then
+  y_param += 1
+ end
+ if btnp(3) then
+  y_param -= 1
+ end
+
  if btnp(4) then
   __debug_render_lines = not __debug_render_lines
  end
@@ -650,10 +727,11 @@ function _update()
 end
 
 function _draw()
- parts[part_index][2]()
+ parts[part_index][2](timer)
  if __debug_stats then
   local col = 10
   print(""..timer, 0, 0, col)
   print(""..stat(1), 0, 7, col)
+  print(""..y_param, 0, 14, col)
  end
 end
